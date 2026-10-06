@@ -257,7 +257,7 @@ const buildPackages = (
       scope: "transitive",
       direct: false,
       resolvedVersions: [...versions].sort(),
-      health: packageHealth(name, findings),
+      health: packageHealth(`pypi:${name}`, name, findings),
       ...(knowledge?.purpose ? { purpose: knowledge.purpose } : {}),
       ...(knowledge?.category ? { category: knowledge.category } : {}),
       ...(knowledge?.guidance ? { guidance: knowledge.guidance } : {}),
