@@ -4,6 +4,7 @@ import type {
   EcosystemFinding,
   EcosystemPackage,
   ProjectEcosystem,
+  Technology,
 } from "@stackgenome/contracts";
 
 declare global {
@@ -104,13 +105,28 @@ const packageFinding = (
   findings.find(
     (finding) =>
       finding.packageName === pkg.name &&
-      (finding.severity === "error" || finding.severity === "warning"),
+      (finding.severity === "error" ||
+        finding.severity === "warning"),
   );
+
+const groupTechnologies = (
+  technologies: Technology[],
+): Map<string, Technology[]> => {
+  const groups = new Map<string, Technology[]>();
+  for (const technology of technologies) {
+    const key = technology.ecosystem ?? "project";
+    const current = groups.get(key) ?? [];
+    current.push(technology);
+    groups.set(key, current);
+  }
+  return groups;
+};
 
 const App = ({ data }: { data: ProjectEcosystem }) => {
   const [tab, setTab] = useState<Tab>("Overview");
   const [packageSearch, setPackageSearch] = useState("");
   const [directOnly, setDirectOnly] = useState(true);
+  const [ecosystem, setEcosystem] = useState("all");
 
   const warningCount = data.findings.filter(
     (item) => item.severity === "warning",
@@ -121,15 +137,13 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
   const directCount = data.packages.filter((pkg) => pkg.direct).length;
   const transitiveCount = data.packages.length - directCount;
 
-  const techSummary = useMemo(
-    () =>
-      data.technologies
-        .map((technology) =>
-          technology.version
-            ? `${technology.name} ${technology.version}`
-            : technology.name,
-        )
-        .join(" · "),
+  const ecosystems = useMemo(
+    () => [...new Set(data.packages.map((pkg) => pkg.ecosystem))].sort(),
+    [data.packages],
+  );
+
+  const technologyGroups = useMemo(
+    () => groupTechnologies(data.technologies),
     [data.technologies],
   );
 
@@ -137,14 +151,18 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
     const query = packageSearch.trim().toLowerCase();
     return data.packages.filter((pkg) => {
       if (directOnly && !pkg.direct) return false;
+      if (ecosystem !== "all" && pkg.ecosystem !== ecosystem) {
+        return false;
+      }
       if (!query) return true;
       return (
         pkg.name.toLowerCase().includes(query) ||
+        pkg.ecosystem.toLowerCase().includes(query) ||
         pkg.category?.toLowerCase().includes(query) ||
         pkg.purpose?.toLowerCase().includes(query)
       );
     });
-  }, [data.packages, directOnly, packageSearch]);
+  }, [data.packages, directOnly, ecosystem, packageSearch]);
 
   return (
     <main style={styles.body}>
@@ -153,10 +171,16 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
           <h1 style={styles.title}>StackGenome</h1>
           <div style={styles.muted}>
             {data.project.name}
-            {data.project.projectType ? ` · ${data.project.projectType}` : ""}
+            {data.project.projectType
+              ? ` · ${data.project.projectType}`
+              : ""}
           </div>
         </div>
-        <div style={styles.muted}>Schema {data.schemaVersion}</div>
+        <div style={styles.muted}>
+          {data.analyzers.length} ecosystem
+          {data.analyzers.length === 1 ? "" : "s"} · Schema{" "}
+          {data.schemaVersion}
+        </div>
       </header>
 
       <section style={styles.stats}>
@@ -203,13 +227,28 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
 
       {tab === "Overview" && (
         <section>
-          <div style={styles.card}>
-            <h2>Detected ecosystem</h2>
-            <p>{techSummary || "No ecosystem technologies detected yet."}</p>
-            <p style={styles.muted}>
-              Analyzers: {data.analyzers.join(", ") || "none"}
-            </p>
-          </div>
+          {[...technologyGroups.entries()].map(
+            ([group, technologies]) => (
+              <div
+                key={group}
+                style={{ ...styles.card, marginBottom: 10 }}
+              >
+                <h2 style={{ textTransform: "capitalize" }}>
+                  {group} ecosystem
+                </h2>
+                <div>
+                  {technologies.map((technology) => (
+                    <span key={technology.id} style={styles.pill}>
+                      {technology.name}
+                      {technology.version
+                        ? ` ${technology.version}`
+                        : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
         </section>
       )}
 
@@ -219,15 +258,31 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
             <input
               aria-label="Search packages"
               value={packageSearch}
-              onChange={(event) => setPackageSearch(event.target.value)}
-              placeholder="Search package, category or purpose"
+              onChange={(event) =>
+                setPackageSearch(event.target.value)
+              }
+              placeholder="Search package, ecosystem, category or purpose"
               style={styles.input}
             />
+            <select
+              aria-label="Filter ecosystem"
+              value={ecosystem}
+              onChange={(event) => setEcosystem(event.target.value)}
+            >
+              <option value="all">All ecosystems</option>
+              {ecosystems.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
             <label>
               <input
                 type="checkbox"
                 checked={directOnly}
-                onChange={(event) => setDirectOnly(event.target.checked)}
+                onChange={(event) =>
+                  setDirectOnly(event.target.checked)
+                }
               />{" "}
               Direct only
             </label>
@@ -236,6 +291,7 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
             <thead>
               <tr>
                 <th style={styles.cell}>Package</th>
+                <th style={styles.cell}>Ecosystem</th>
                 <th style={styles.cell}>Type</th>
                 <th style={styles.cell}>Declared</th>
                 <th style={styles.cell}>Resolved</th>
@@ -254,16 +310,23 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
                         <div style={styles.muted}>{pkg.category}</div>
                       ) : null}
                     </td>
+                    <td style={styles.cell}>{pkg.ecosystem}</td>
                     <td style={styles.cell}>
                       {pkg.direct ? pkg.scope : "transitive"}
                     </td>
-                    <td style={styles.cell}>{pkg.declaredVersion ?? "—"}</td>
+                    <td style={styles.cell}>
+                      {pkg.declaredVersion ?? "—"}
+                    </td>
                     <td style={styles.cell}>
                       {pkg.resolvedVersions.join(", ") || "—"}
                     </td>
-                    <td style={styles.cell}>{pkg.purpose ?? "Unknown"}</td>
                     <td style={styles.cell}>
-                      {finding ? `⚠ ${finding.title}` : "✓ Healthy"}
+                      {pkg.purpose ?? "Unknown"}
+                    </td>
+                    <td style={styles.cell}>
+                      {finding
+                        ? `${finding.severity === "error" ? "⛔" : "⚠"} ${finding.title}`
+                        : "✓ Healthy"}
                     </td>
                   </tr>
                 );
@@ -286,7 +349,8 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
                 style={{ ...styles.card, marginBottom: 10 }}
               >
                 <strong>
-                  {finding.severity === "error" ? "⛔" : "⚠"} {finding.title}
+                  {finding.severity === "error" ? "⛔" : "⚠"}{" "}
+                  {finding.title}
                 </strong>
                 <p>{finding.message}</p>
                 {finding.recommendation ? (
@@ -325,9 +389,9 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
           <div style={styles.card}>
             <strong>Existing capabilities first</strong>
             <p style={styles.muted}>
-              StackGenome will prefer libraries already present in this project
-              before recommending a new dependency. The detected capabilities
-              above form the decision input for that advisor.
+              StackGenome prefers libraries already present across the
+              detected project ecosystems before recommending a new
+              dependency.
             </p>
           </div>
         </section>
@@ -342,7 +406,9 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
                 key={pkg.id}
                 style={{ ...styles.card, marginBottom: 10 }}
               >
-                <strong>{pkg.name}</strong>
+                <strong>
+                  {pkg.name} · {pkg.ecosystem}
+                </strong>
                 <p style={styles.muted}>
                   Preferred patterns:{" "}
                   {pkg.guidance?.preferredPatterns.join(" · ")}

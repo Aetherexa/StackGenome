@@ -6,6 +6,7 @@ import {
   type EcosystemFinding,
   type EcosystemPackage,
   type ProjectEcosystem,
+  type ProjectIdentity,
   type Technology,
 } from "@stackgenome/contracts";
 
@@ -41,29 +42,93 @@ const dedupeById = <T extends { id: string }>(items: T[]): T[] => {
   return [...values.values()];
 };
 
+const mergeCapabilities = (items: Capability[]): Capability[] => {
+  const capabilities = new Map<string, Capability>();
+
+  for (const item of items) {
+    const existing = capabilities.get(item.id);
+    if (!existing) {
+      capabilities.set(item.id, { ...item, providedBy: [...item.providedBy] });
+      continue;
+    }
+
+    capabilities.set(item.id, {
+      ...existing,
+      name: existing.name || item.name,
+      confidence: Math.max(existing.confidence, item.confidence),
+      providedBy: [...new Set([...existing.providedBy, ...item.providedBy])].sort(),
+    });
+  }
+
+  return [...capabilities.values()];
+};
+
+const mergeProjectIdentity = (
+  context: ProjectIdentity,
+  fragments: Array<Partial<ProjectEcosystem>>,
+): ProjectIdentity => {
+  const projectNames = fragments
+    .map((fragment) => fragment.project?.name)
+    .filter((name): name is string => Boolean(name));
+  const projectTypes = [
+    ...new Set(
+      fragments
+        .map((fragment) => fragment.project?.projectType)
+        .filter((type): type is string => Boolean(type)),
+    ),
+  ];
+
+  return {
+    ...context,
+    ...(projectNames.length > 0 ? { name: projectNames[0] ?? context.name } : {}),
+    ...(projectTypes.length === 1
+      ? { projectType: projectTypes[0] }
+      : projectTypes.length > 1
+        ? { projectType: "Multi-ecosystem workspace" }
+        : context.projectType
+          ? { projectType: context.projectType }
+          : {}),
+  };
+};
+
 export class ProjectEcosystemEngine {
   constructor(private readonly registry: AnalyzerRegistry) {}
 
   async analyze(context: AnalyzerContext): Promise<ProjectEcosystem> {
     const analyzers = await this.registry.matching(context);
-    const fragments = await Promise.all(analyzers.map((analyzer) => analyzer.analyze(context)));
+    const fragments = await Promise.all(
+      analyzers.map((analyzer) => analyzer.analyze(context)),
+    );
 
-    const technologies = fragments.flatMap((fragment) => fragment.technologies ?? []) as Technology[];
-    const packages = fragments.flatMap((fragment) => fragment.packages ?? []) as EcosystemPackage[];
-    const capabilities = fragments.flatMap((fragment) => fragment.capabilities ?? []) as Capability[];
-    const findings = fragments.flatMap((fragment) => fragment.findings ?? []) as EcosystemFinding[];
+    const technologies = fragments.flatMap(
+      (fragment) => fragment.technologies ?? [],
+    ) as Technology[];
+    const packages = fragments.flatMap(
+      (fragment) => fragment.packages ?? [],
+    ) as EcosystemPackage[];
+    const capabilities = fragments.flatMap(
+      (fragment) => fragment.capabilities ?? [],
+    ) as Capability[];
+    const findings = fragments.flatMap(
+      (fragment) => fragment.findings ?? [],
+    ) as EcosystemFinding[];
 
     return {
       schemaVersion: PROJECT_ECOSYSTEM_SCHEMA_VERSION,
       generatedAt: new Date().toISOString(),
-      project: fragments.find((fragment) => fragment.project)?.project ?? context.project,
+      project: mergeProjectIdentity(context.project, fragments),
       technologies: dedupeById(technologies),
       packages: dedupeById(packages),
-      capabilities: dedupeById(capabilities),
+      capabilities: mergeCapabilities(capabilities),
       findings: dedupeById(findings),
       analyzers: analyzers.map((analyzer) => analyzer.id),
     };
   }
 }
 
-export type { AnalyzerContext, EcosystemAnalyzer, ProjectEcosystem, WorkspaceReader } from "@stackgenome/contracts";
+export type {
+  AnalyzerContext,
+  EcosystemAnalyzer,
+  ProjectEcosystem,
+  WorkspaceReader,
+} from "@stackgenome/contracts";

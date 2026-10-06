@@ -1,4 +1,4 @@
-export const PROJECT_ECOSYSTEM_SCHEMA_VERSION = "1.1" as const;
+export const PROJECT_ECOSYSTEM_SCHEMA_VERSION = "1.2" as const;
 
 export type PackageScope =
   | "runtime"
@@ -27,6 +27,7 @@ export interface Technology {
   id: string;
   name: string;
   kind: TechnologyKind;
+  ecosystem?: string;
   version?: string;
   source: string;
 }
