@@ -14,9 +14,11 @@
     "baseUrl": ".",
     "paths": {
       "@stackgenome/contracts": ["packages/contracts/src/index.ts"],
+      "@stackgenome/knowledge": ["packages/knowledge/src/index.ts"],
       "@stackgenome/core": ["packages/core/src/index.ts"],
       "@stackgenome/analyzer-node": ["packages/analyzer-node/src/index.ts"],
-      "@stackgenome/analyzer-python": ["packages/analyzer-python/src/index.ts"]
+      "@stackgenome/analyzer-python": ["packages/analyzer-python/src/index.ts"],
+      "@stackgenome/advisor": ["packages/advisor/src/index.ts"]
     }
   }
 }

@@ -1,4 +1,4 @@
-export const PROJECT_ECOSYSTEM_SCHEMA_VERSION = "1.2" as const;
+export const PROJECT_ECOSYSTEM_SCHEMA_VERSION = "1.3" as const;
 
 export type PackageScope =
   | "runtime"
@@ -84,6 +84,36 @@ export interface ProjectEcosystem {
   capabilities: Capability[];
   findings: EcosystemFinding[];
   analyzers: string[];
+}
+
+export type AdvisorMode = "existing-only" | "existing-first";
+
+export interface AdvisorRequest {
+  intent: string;
+  mode: AdvisorMode;
+}
+
+export interface RecommendationCandidate {
+  packageId: string;
+  name: string;
+  ecosystem: string;
+  existing: boolean;
+  confidence: number;
+  matchedCapabilities: string[];
+  reason: string;
+  installedVersion?: string;
+  declaredVersion?: string;
+  guidance?: PackageGuidance;
+}
+
+export interface AdvisorResult {
+  intent: string;
+  mode: AdvisorMode;
+  matchedCapabilities: string[];
+  newDependencyRequired: boolean | null;
+  primary?: RecommendationCandidate;
+  alternatives: RecommendationCandidate[];
+  explanation: string;
 }
 
 export interface WorkspaceReader {
