@@ -1,6 +1,7 @@
 import { parse as parseYaml } from "yaml";
 
 export type NodePackageManager = "npm" | "pnpm" | "yarn";
+export type PeerMetadataFidelity = "full" | "partial" | "none";
 
 export interface ResolvedPackage {
   name: string;
@@ -14,18 +15,29 @@ export interface LockfileAnalysis {
   manager: NodePackageManager;
   source: string;
   packages: ResolvedPackage[];
+  peerMetadataFidelity: PeerMetadataFidelity;
 }
 
-interface NpmLockPackage {
-  version?: string;
+interface PeerMetadata {
   peerDependencies?: Record<string, string>;
   peerDependenciesMeta?: Record<string, { optional?: boolean }>;
   deprecated?: string;
 }
 
+interface NpmLockPackage extends PeerMetadata {
+  version?: string;
+}
+
 interface NpmLock {
   packages?: Record<string, NpmLockPackage>;
 }
+
+const optionalPeerNames = (metadata: PeerMetadata): Set<string> =>
+  new Set(
+    Object.entries(metadata.peerDependenciesMeta ?? {})
+      .filter(([, value]) => value.optional === true)
+      .map(([peer]) => peer),
+  );
 
 const packageNameFromNodeModulesPath = (path: string): string | undefined => {
   const marker = "node_modules/";
@@ -41,25 +53,26 @@ export const parseNpmLock = (text: string): LockfileAnalysis => {
     const name = packageNameFromNodeModulesPath(path);
     if (!name || !metadata.version) continue;
 
-    const optionalPeers = new Set(
-      Object.entries(metadata.peerDependenciesMeta ?? {})
-        .filter(([, value]) => value.optional === true)
-        .map(([peer]) => peer),
-    );
-
     packages.push({
       name,
       version: metadata.version,
       peerDependencies: metadata.peerDependencies ?? {},
-      optionalPeers,
+      optionalPeers: optionalPeerNames(metadata),
       ...(metadata.deprecated ? { deprecated: metadata.deprecated } : {}),
     });
   }
 
-  return { manager: "npm", source: "package-lock.json", packages };
+  return {
+    manager: "npm",
+    source: "package-lock.json",
+    packages,
+    peerMetadataFidelity: "full",
+  };
 };
 
-const parsePnpmPackageKey = (key: string): { name: string; version: string } | undefined => {
+const parsePnpmPackageKey = (
+  key: string,
+): { name: string; version: string } | undefined => {
   const cleaned = key.replace(/^\//, "").split("(")[0] ?? "";
   const lastAt = cleaned.lastIndexOf("@");
 
@@ -75,12 +88,15 @@ const parsePnpmPackageKey = (key: string): { name: string; version: string } | u
     : undefined;
 };
 
-export const parsePnpmLock = (text: string): LockfileAnalysis => {
-  const lock = parseYaml(text) as {
-    packages?: Record<string, unknown>;
-    snapshots?: Record<string, unknown>;
-  };
+interface PnpmPackageMetadata extends PeerMetadata {}
 
+interface PnpmLock {
+  packages?: Record<string, PnpmPackageMetadata>;
+  snapshots?: Record<string, PnpmPackageMetadata>;
+}
+
+export const parsePnpmLock = (text: string): LockfileAnalysis => {
+  const lock = parseYaml(text) as PnpmLock;
   const keys = new Set([
     ...Object.keys(lock.packages ?? {}),
     ...Object.keys(lock.snapshots ?? {}),
@@ -88,19 +104,32 @@ export const parsePnpmLock = (text: string): LockfileAnalysis => {
 
   const packages = [...keys].flatMap((key) => {
     const parsed = parsePnpmPackageKey(key);
-    return parsed
-      ? [{
-          ...parsed,
-          peerDependencies: {},
-          optionalPeers: new Set<string>(),
-        }]
-      : [];
+    if (!parsed) return [];
+
+    const metadata =
+      lock.packages?.[key] ??
+      lock.snapshots?.[key] ??
+      {};
+
+    return [{
+      ...parsed,
+      peerDependencies: metadata.peerDependencies ?? {},
+      optionalPeers: optionalPeerNames(metadata),
+      ...(metadata.deprecated ? { deprecated: metadata.deprecated } : {}),
+    }];
   });
 
-  return { manager: "pnpm", source: "pnpm-lock.yaml", packages };
+  return {
+    manager: "pnpm",
+    source: "pnpm-lock.yaml",
+    packages,
+    peerMetadataFidelity: "full",
+  };
 };
 
-const packageNameFromYarnSelector = (selector: string): string | undefined => {
+const packageNameFromYarnSelector = (
+  selector: string,
+): string | undefined => {
   const clean = selector.trim().replace(/^"|"$/g, "");
   const npmIndex = clean.indexOf("@npm:");
   if (npmIndex > 0) return clean.slice(0, npmIndex);
@@ -109,27 +138,93 @@ const packageNameFromYarnSelector = (selector: string): string | undefined => {
   return lastAt > 0 ? clean.slice(0, lastAt) : undefined;
 };
 
-export const parseYarnLock = (text: string): LockfileAnalysis => {
+interface YarnModernPackage extends PeerMetadata {
+  version?: string;
+}
+
+const parseModernYarnLock = (
+  text: string,
+): LockfileAnalysis | undefined => {
+  if (!text.includes("__metadata:")) return undefined;
+
+  const parsed = parseYaml(text) as Record<string, unknown>;
+  const packages: ResolvedPackage[] = [];
+
+  for (const [selector, rawMetadata] of Object.entries(parsed)) {
+    if (selector === "__metadata") continue;
+    if (typeof rawMetadata !== "object" || rawMetadata === null) continue;
+
+    const metadata = rawMetadata as YarnModernPackage;
+    const name = packageNameFromYarnSelector(selector);
+    if (!name || !metadata.version) continue;
+
+    packages.push({
+      name,
+      version: metadata.version,
+      peerDependencies: metadata.peerDependencies ?? {},
+      optionalPeers: optionalPeerNames(metadata),
+      ...(metadata.deprecated ? { deprecated: metadata.deprecated } : {}),
+    });
+  }
+
+  return {
+    manager: "yarn",
+    source: "yarn.lock",
+    packages,
+    peerMetadataFidelity: "full",
+  };
+};
+
+const parseClassicYarnLock = (text: string): LockfileAnalysis => {
   const packages: ResolvedPackage[] = [];
   const lines = text.split(/\r?\n/);
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index] ?? "";
-    if (!line || /^\s/.test(line) || line.startsWith("#") || !line.endsWith(":")) continue;
+    if (
+      !line ||
+      /^\s/.test(line) ||
+      line.startsWith("#") ||
+      !line.endsWith(":")
+    ) {
+      continue;
+    }
 
     const firstSelector = line.slice(0, -1).split(",")[0];
-    const name = firstSelector ? packageNameFromYarnSelector(firstSelector) : undefined;
+    const name = firstSelector
+      ? packageNameFromYarnSelector(firstSelector)
+      : undefined;
     if (!name) continue;
 
     let version: string | undefined;
+    const peerDependencies: Record<string, string> = {};
+
     for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
       const detail = lines[cursor] ?? "";
       if (detail && !/^\s/.test(detail)) break;
 
-      const match = detail.match(/^\s+version\s+["']?([^"'\s]+)["']?/);
-      if (match?.[1]) {
-        version = match[1];
-        break;
+      const versionMatch = detail.match(
+        /^\s+version\s+["']?([^"'\s]+)["']?/,
+      );
+      if (versionMatch?.[1]) {
+        version = versionMatch[1];
+      }
+
+      if (/^\s{2}peerDependencies:\s*$/.test(detail)) {
+        for (
+          let peerCursor = cursor + 1;
+          peerCursor < lines.length;
+          peerCursor += 1
+        ) {
+          const peerLine = lines[peerCursor] ?? "";
+          const peerMatch = peerLine.match(
+            /^\s{4}("?[^"\s]+"?)\s+["']?([^"'\s]+)["']?$/,
+          );
+          if (!peerMatch?.[1] || !peerMatch[2]) break;
+          peerDependencies[peerMatch[1].replaceAll('"', "")] =
+            peerMatch[2];
+          cursor = peerCursor;
+        }
       }
     }
 
@@ -137,14 +232,22 @@ export const parseYarnLock = (text: string): LockfileAnalysis => {
       packages.push({
         name,
         version,
-        peerDependencies: {},
+        peerDependencies,
         optionalPeers: new Set<string>(),
       });
     }
   }
 
-  return { manager: "yarn", source: "yarn.lock", packages };
+  return {
+    manager: "yarn",
+    source: "yarn.lock",
+    packages,
+    peerMetadataFidelity: "partial",
+  };
 };
+
+export const parseYarnLock = (text: string): LockfileAnalysis =>
+  parseModernYarnLock(text) ?? parseClassicYarnLock(text);
 
 export const groupResolvedVersions = (
   packages: ResolvedPackage[],

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { AnalyzerContext, EcosystemAnalyzer } from "@stackgenome/contracts";
+import type {
+  AnalyzerContext,
+  EcosystemAnalyzer,
+} from "@stackgenome/contracts";
 import { AnalyzerRegistry, ProjectEcosystemEngine } from "./index.js";
 
 const context: AnalyzerContext = {
@@ -44,14 +47,87 @@ describe("ProjectEcosystemEngine", () => {
       displayName: "Test",
       detect: async () => true,
       analyze: async () => ({
-        technologies: [{ id: "runtime:node", name: "Node.js", kind: "runtime", source: "test" }],
-        capabilities: [{ id: "capability:http", name: "HTTP", providedBy: ["demo"], confidence: 1 }],
+        technologies: [
+          {
+            id: "runtime:node",
+            name: "Node.js",
+            kind: "runtime",
+            source: "test",
+          },
+        ],
+        capabilities: [
+          {
+            id: "capability:http",
+            name: "HTTP",
+            providedBy: ["demo"],
+            confidence: 1,
+          },
+        ],
       }),
     };
-    const result = await new ProjectEcosystemEngine(new AnalyzerRegistry().register(analyzer)).analyze(context);
+    const result = await new ProjectEcosystemEngine(
+      new AnalyzerRegistry().register(analyzer),
+    ).analyze(context);
+
     expect(result.project.name).toBe("demo");
     expect(result.analyzers).toEqual(["test"]);
     expect(result.technologies).toHaveLength(1);
     expect(result.capabilities).toHaveLength(1);
+  });
+
+  it("merges shared capabilities from multiple ecosystems", async () => {
+    const node: EcosystemAnalyzer = {
+      id: "node",
+      displayName: "Node",
+      detect: async () => true,
+      analyze: async () => ({
+        project: {
+          name: "demo",
+          rootUri: "file:///demo",
+          projectType: "Frontend application",
+        },
+        capabilities: [
+          {
+            id: "capability:http-client",
+            name: "HTTP client",
+            providedBy: ["axios"],
+            confidence: 1,
+          },
+        ],
+      }),
+    };
+    const python: EcosystemAnalyzer = {
+      id: "python",
+      displayName: "Python",
+      detect: async () => true,
+      analyze: async () => ({
+        project: {
+          name: "demo",
+          rootUri: "file:///demo",
+          projectType: "Python backend service",
+        },
+        capabilities: [
+          {
+            id: "capability:http-client",
+            name: "HTTP client",
+            providedBy: ["httpx"],
+            confidence: 1,
+          },
+        ],
+      }),
+    };
+
+    const result = await new ProjectEcosystemEngine(
+      new AnalyzerRegistry().register(node).register(python),
+    ).analyze(context);
+
+    expect(result.project.projectType).toBe("Multi-ecosystem workspace");
+    expect(result.analyzers).toEqual(["node", "python"]);
+    expect(result.capabilities).toEqual([
+      expect.objectContaining({
+        id: "capability:http-client",
+        providedBy: ["axios", "httpx"],
+      }),
+    ]);
   });
 });

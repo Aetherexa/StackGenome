@@ -8,17 +8,30 @@
   "publisher": "aetherexa",
   "engines": { "vscode": "^1.100.0" },
   "categories": ["Other"],
-  "activationEvents": ["onCommand:stackgenome.analyzeProject", "onCommand:stackgenome.openReport"],
+  "activationEvents": [
+    "onCommand:stackgenome.analyzeProject",
+    "onCommand:stackgenome.openReport"
+  ],
   "main": "./dist/extension.cjs",
   "contributes": {
     "commands": [
-      { "command": "stackgenome.analyzeProject", "title": "StackGenome: Analyze Project" },
-      { "command": "stackgenome.openReport", "title": "StackGenome: Open Ecosystem Report" }
+      {
+        "command": "stackgenome.analyzeProject",
+        "title": "StackGenome: Analyze Project"
+      },
+      {
+        "command": "stackgenome.openReport",
+        "title": "StackGenome: Open Ecosystem Report"
+      }
     ]
   },
-  "scripts": { "build": "node ./build.mjs", "typecheck": "tsc -b --pretty false" },
+  "scripts": {
+    "build": "node ./build.mjs",
+    "typecheck": "tsc -b --pretty false"
+  },
   "dependencies": {
     "@stackgenome/analyzer-node": "workspace:*",
+    "@stackgenome/analyzer-python": "workspace:*",
     "@stackgenome/contracts": "workspace:*",
     "@stackgenome/core": "workspace:*",
     "react": "^19.1.1",
