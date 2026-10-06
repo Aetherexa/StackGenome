@@ -10,7 +10,8 @@
     { "path": "../../packages/contracts" },
     { "path": "../../packages/core" },
     { "path": "../../packages/analyzer-node" },
-    { "path": "../../packages/analyzer-python" }
+    { "path": "../../packages/analyzer-python" },
+    { "path": "../../packages/advisor" }
   ],
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

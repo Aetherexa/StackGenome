@@ -10,7 +10,9 @@
   "categories": ["Other"],
   "activationEvents": [
     "onCommand:stackgenome.analyzeProject",
-    "onCommand:stackgenome.openReport"
+    "onCommand:stackgenome.openReport",
+    "onCommand:stackgenome.findExistingCapability",
+    "onCommand:stackgenome.recommendTechnology"
   ],
   "main": "./dist/extension.cjs",
   "contributes": {
@@ -22,6 +24,14 @@
       {
         "command": "stackgenome.openReport",
         "title": "StackGenome: Open Ecosystem Report"
+      },
+      {
+        "command": "stackgenome.findExistingCapability",
+        "title": "StackGenome: Find Existing Capability"
+      },
+      {
+        "command": "stackgenome.recommendTechnology",
+        "title": "StackGenome: Recommend Technology"
       }
     ]
   },
@@ -30,6 +40,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@stackgenome/advisor": "workspace:*",
     "@stackgenome/analyzer-node": "workspace:*",
     "@stackgenome/analyzer-python": "workspace:*",
     "@stackgenome/contracts": "workspace:*",
