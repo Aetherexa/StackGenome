@@ -104,7 +104,8 @@ const packageFinding = (
 ): EcosystemFinding | undefined =>
   findings.find(
     (finding) =>
-      finding.packageName === pkg.name &&
+      (finding.packageId === pkg.id ||
+        (!finding.packageId && finding.packageName === pkg.name)) &&
       (finding.severity === "error" ||
         finding.severity === "warning"),
   );

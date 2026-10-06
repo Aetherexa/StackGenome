@@ -65,6 +65,7 @@ export interface EcosystemFinding {
   title: string;
   message: string;
   packageName?: string;
+  packageId?: string;
   recommendation?: string;
 }
 

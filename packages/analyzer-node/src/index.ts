@@ -108,10 +108,15 @@ const declaredSections = (
 ];
 
 const packageHealth = (
+  packageId: string,
   name: string,
   findings: EcosystemFinding[],
 ): PackageHealth => {
-  const related = findings.filter((finding) => finding.packageName === name);
+  const related = findings.filter(
+    (finding) =>
+      finding.packageId === packageId ||
+      (!finding.packageId && finding.packageName === name),
+  );
   if (related.some((finding) => finding.severity === "error")) return "error";
   if (related.some((finding) => finding.severity === "warning")) return "warning";
   return related.length > 0 ? "healthy" : "healthy";
@@ -184,6 +189,7 @@ const duplicateFindings = (
       title: "Multiple resolved versions",
       message: `${name} resolves to ${[...resolved].sort().join(", ")}.`,
       packageName: name,
+      packageId: `npm:${name}`,
       recommendation: "Review dependency constraints and deduplicate where the ecosystem permits.",
     }));
 
@@ -203,6 +209,7 @@ const deprecatedFindings = (
       title: "Deprecated package",
       message: `${pkg.name}@${pkg.version}: ${pkg.deprecated}`,
       packageName: pkg.name,
+      packageId: `npm:${pkg.name}`,
       recommendation: "Plan migration to a maintained alternative or supported version.",
     });
   }
@@ -224,6 +231,7 @@ const unresolvedFindings = (
           title: "Declared dependency not resolved",
           message: `${pkg.name} is declared as ${pkg.declaredVersion ?? "unknown"} but no resolved version was found in the selected lockfile.`,
           packageName: pkg.name,
+          packageId: `npm:${pkg.name}`,
           recommendation: "Verify lockfile consistency and reinstall dependencies if required.",
         }))
     : [];
@@ -253,6 +261,7 @@ const peerFindings = (
           title: "Peer dependency missing",
           message: `${findingBase}, but ${peerName} is not resolved.`,
           packageName: pkg.name,
+          packageId: `npm:${pkg.name}`,
           recommendation: `Install a compatible ${peerName} version or use a compatible ${pkg.name} release.`,
         });
         continue;
@@ -270,6 +279,7 @@ const peerFindings = (
           title: "Peer dependency mismatch",
           message: `${findingBase}, but resolved versions are ${peerVersions.join(", ")}.`,
           packageName: pkg.name,
+          packageId: `npm:${pkg.name}`,
           recommendation: "Align the peer dependency versions before relying on this package combination.",
         });
       }
@@ -311,6 +321,7 @@ const detectTechnologies = (
       id: "language:javascript",
       name: "JavaScript",
       kind: "language",
+      ecosystem: "node",
       source: "package.json",
     },
   ];
@@ -320,6 +331,7 @@ const detectTechnologies = (
       id: "language:typescript",
       name: "TypeScript",
       kind: "language",
+      ecosystem: "node",
       source: "package.json",
     });
   }
@@ -330,6 +342,7 @@ const detectTechnologies = (
         id: `framework:${pkg}`,
         name,
         kind: "framework",
+        ecosystem: "node",
         source: pkg,
       });
     }
@@ -341,6 +354,7 @@ const detectTechnologies = (
         id: `build-system:${pkg}`,
         name,
         kind: "build-system",
+        ecosystem: "node",
         source: pkg,
       });
     }
@@ -351,6 +365,7 @@ const detectTechnologies = (
       id: "runtime:node",
       name: "Node.js",
       kind: "runtime",
+      ecosystem: "node",
       version: manifest.engines.node,
       source: "package.json#engines.node",
     });
@@ -361,6 +376,7 @@ const detectTechnologies = (
       id: `package-manager:${manager.name}`,
       name: manager.name,
       kind: "package-manager",
+      ecosystem: "node",
       ...(manager.version ? { version: manager.version } : {}),
       source: manager.source,
     });
@@ -416,7 +432,7 @@ export class NodeEcosystemAnalyzer implements EcosystemAnalyzer {
 
     const allPackages = [...directPackages, ...transitivePackages].map((pkg) => ({
       ...pkg,
-      health: packageHealth(pkg.name, findings),
+      health: packageHealth(pkg.id, pkg.name, findings),
     }));
 
     const manager = declaredManager
