@@ -431,13 +431,13 @@ export class NodeEcosystemAnalyzer implements EcosystemAnalyzer {
           }
         : undefined;
 
+    const projectType = inferProjectType(directNames);
+
     return {
       project: {
         ...context.project,
         ...(manifest.name ? { name: manifest.name } : {}),
-        ...(inferProjectType(directNames)
-          ? { projectType: inferProjectType(directNames) }
-          : {}),
+        ...(projectType ? { projectType } : {}),
       },
       packages: allPackages,
       technologies: detectTechnologies(manifest, directNames, manager),
