@@ -141,9 +141,14 @@ const newCandidates = (
         ) === true
           ? 0.08
           : 0;
+      const primaryBonus = matched.some((capability) =>
+        candidate.primaryCapabilities?.includes(capability),
+      )
+        ? 0.12
+        : 0;
       const confidence = Math.min(
-        0.94,
-        0.68 + matched.length * 0.08 + frameworkBonus,
+        0.96,
+        0.64 + matched.length * 0.08 + frameworkBonus + primaryBonus,
       );
 
       return [{

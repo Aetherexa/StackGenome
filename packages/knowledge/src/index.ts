@@ -4,6 +4,7 @@ export interface PackageKnowledgeEntry {
   purpose: string;
   category: string;
   capabilities?: string[];
+  primaryCapabilities?: string[];
   aliases?: string[];
   guidance?: PackageGuidance;
   frameworks?: string[];
@@ -200,6 +201,7 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "Runtime schema validation with static type inference",
     category: "validation",
     capabilities: ["validation"],
+    primaryCapabilities: ["validation"],
     guidance: {
       preferredPatterns: [
         "Define reusable schemas near domain boundaries.",
@@ -216,16 +218,19 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "Object schema validation",
     category: "validation",
     capabilities: ["validation"],
+    primaryCapabilities: ["validation"],
   },
   joi: {
     purpose: "Schema description and validation",
     category: "validation",
     capabilities: ["validation"],
+    primaryCapabilities: ["validation"],
   },
   axios: {
     purpose: "Promise-based HTTP client",
     category: "http",
     capabilities: ["http-client"],
+    primaryCapabilities: ["http-client"],
     guidance: {
       preferredPatterns: ["Reuse the project's configured Axios instance and interceptors."],
       avoidPatterns: ["Avoid creating ad-hoc Axios instances when a shared client already exists."],
@@ -235,11 +240,13 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "Fetch-based HTTP client",
     category: "http",
     capabilities: ["http-client"],
+    primaryCapabilities: ["http-client"],
   },
   "@tanstack/react-query": {
     purpose: "Server-state fetching, caching and mutation management",
     category: "server-state",
     capabilities: ["server-state", "query-caching"],
+    primaryCapabilities: ["server-state", "query-caching"],
     frameworks: ["react", "next"],
     guidance: {
       preferredPatterns: [
@@ -254,6 +261,7 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "React hooks for remote data fetching and caching",
     category: "server-state",
     capabilities: ["server-state", "query-caching"],
+    primaryCapabilities: ["server-state", "query-caching"],
     frameworks: ["react", "next"],
   },
   redux: {
@@ -276,6 +284,7 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "Performant React form state and validation orchestration",
     category: "forms",
     capabilities: ["forms"],
+    primaryCapabilities: ["forms"],
     frameworks: ["react", "next"],
     guidance: {
       preferredPatterns: ["Prefer register/useController and reuse existing form abstractions."],
@@ -383,6 +392,7 @@ export const PYTHON_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "Runtime data validation using Python type hints",
     category: "validation",
     capabilities: ["validation"],
+    primaryCapabilities: ["validation"],
     guidance: {
       preferredPatterns: ["Use BaseModel for boundary validation and serialization.", "Keep validation rules close to domain or API models."],
       avoidPatterns: ["Avoid duplicating equivalent manual validation when a Pydantic model already exists."],
@@ -392,6 +402,7 @@ export const PYTHON_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "Synchronous HTTP client",
     category: "http",
     capabilities: ["http-client"],
+    primaryCapabilities: ["http-client"],
   },
   httpx: {
     purpose: "Synchronous and asynchronous HTTP client",
@@ -406,6 +417,7 @@ export const PYTHON_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "SQL toolkit and object-relational mapper",
     category: "database",
     capabilities: ["database", "orm"],
+    primaryCapabilities: ["database", "orm"],
   },
   "django-rest-framework": {
     purpose: "REST API toolkit for Django",
@@ -417,6 +429,7 @@ export const PYTHON_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "Python testing framework",
     category: "testing",
     capabilities: ["unit-testing"],
+    primaryCapabilities: ["unit-testing"],
   },
   "pytest-asyncio": {
     purpose: "Asyncio support for pytest",

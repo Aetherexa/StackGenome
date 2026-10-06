@@ -96,6 +96,52 @@ describe("CapabilityAdvisor", () => {
     );
   });
 
+  it("prefers a purpose-built Node validation library", () => {
+    const ecosystem = base({
+      analyzers: ["node"],
+      technologies: [
+        {
+          id: "language:typescript",
+          name: "TypeScript",
+          kind: "language",
+          ecosystem: "node",
+          source: "package.json",
+        },
+      ],
+    });
+
+    const result = new CapabilityAdvisor().recommend(ecosystem, {
+      intent: "Add runtime schema validation",
+      mode: "existing-first",
+    });
+
+    expect(result.newDependencyRequired).toBe(true);
+    expect(result.primary?.name).toBe("zod");
+  });
+
+  it("prefers Pydantic over a broad web framework for Python validation", () => {
+    const ecosystem = base({
+      analyzers: ["python"],
+      technologies: [
+        {
+          id: "language:python",
+          name: "Python",
+          kind: "language",
+          ecosystem: "python",
+          source: "pyproject.toml",
+        },
+      ],
+    });
+
+    const result = new CapabilityAdvisor().recommend(ecosystem, {
+      intent: "Add schema validation",
+      mode: "existing-first",
+    });
+
+    expect(result.newDependencyRequired).toBe(true);
+    expect(result.primary?.name).toBe("pydantic");
+  });
+
   it("recommends Python ecosystem packages for Python projects", () => {
     const ecosystem = base({
       analyzers: ["python"],
