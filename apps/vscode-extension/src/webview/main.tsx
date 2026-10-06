@@ -110,6 +110,11 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
   );
 };
 
-createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("StackGenome webview root element was not found.");
+}
+
+createRoot(rootElement).render(
   <React.StrictMode><App data={window.__STACKGENOME_DATA__} /></React.StrictMode>,
 );
