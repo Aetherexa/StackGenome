@@ -29,6 +29,14 @@ export const CAPABILITY_DEFINITIONS: Record<string, CapabilityDefinition> = {
     name: "Application routing",
     aliases: ["routing", "router", "navigation", "routes"],
   },
+  "server-rendering": {
+    name: "Server rendering",
+    aliases: ["server rendering", "ssr", "server side rendering"],
+  },
+  "dependency-injection": {
+    name: "Dependency injection",
+    aliases: ["dependency injection", "di container", "inject dependencies"],
+  },
   validation: {
     name: "Schema validation",
     aliases: ["validation", "validate", "schema validation", "runtime validation", "api validation", "input validation"],
@@ -84,6 +92,14 @@ export const CAPABILITY_DEFINITIONS: Record<string, CapabilityDefinition> = {
   formatting: {
     name: "Formatting",
     aliases: ["format code", "formatter", "formatting"],
+  },
+  build: {
+    name: "Build tooling",
+    aliases: ["build tool", "bundler", "bundle project", "build project"],
+  },
+  typescript: {
+    name: "TypeScript",
+    aliases: ["typescript", "type script"],
   },
   "type-checking": {
     name: "Static type checking",
@@ -162,7 +178,7 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
   next: {
     purpose: "React full-stack application framework",
     category: "framework",
-    capabilities: ["ui", "routing"],
+    capabilities: ["ui", "routing", "server-rendering"],
     frameworks: ["react"],
   },
   express: {
@@ -178,7 +194,7 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
   "@nestjs/core": {
     purpose: "Node.js server application framework",
     category: "framework",
-    capabilities: ["web-server"],
+    capabilities: ["web-server", "dependency-injection"],
   },
   zod: {
     purpose: "Runtime schema validation with static type inference",
@@ -300,6 +316,26 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "Browser end-to-end testing framework",
     category: "testing",
     capabilities: ["e2e-testing"],
+  },
+  vite: {
+    purpose: "Frontend build tool and development server",
+    category: "build",
+    capabilities: ["build"],
+  },
+  webpack: {
+    purpose: "JavaScript module bundler",
+    category: "build",
+    capabilities: ["build"],
+  },
+  esbuild: {
+    purpose: "JavaScript and TypeScript bundler/minifier",
+    category: "build",
+    capabilities: ["build"],
+  },
+  typescript: {
+    purpose: "Typed superset of JavaScript and compiler",
+    category: "language-tooling",
+    capabilities: ["typescript"],
   },
   eslint: {
     purpose: "JavaScript and TypeScript linting",

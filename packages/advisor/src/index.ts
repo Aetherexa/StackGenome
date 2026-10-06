@@ -58,12 +58,12 @@ const existingCandidates = (
   return ecosystem.packages
     .filter((pkg) => pkg.direct)
     .flatMap((pkg) => {
-      const capability = ecosystem.capabilities.filter((item) =>
-        item.providedBy.includes(pkg.name),
+      const catalogEntry = TECHNOLOGY_CATALOG.find(
+        (candidate) => candidate.packageId === pkg.id,
       );
-      const matched = capability
-        .map((item) => item.id.replace(/^capability:/, ""))
-        .filter((id) => requested.has(id));
+      const matched = (catalogEntry?.capabilities ?? []).filter((id) =>
+        requested.has(id),
+      );
 
       if (matched.length === 0) return [];
 

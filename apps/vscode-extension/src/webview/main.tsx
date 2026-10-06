@@ -1,15 +1,19 @@
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type {
+  AdvisorResult,
   EcosystemFinding,
   EcosystemPackage,
   ProjectEcosystem,
+  RecommendationCandidate,
   Technology,
 } from "@stackgenome/contracts";
 
 declare global {
   interface Window {
     __STACKGENOME_DATA__: ProjectEcosystem;
+    __STACKGENOME_RECOMMENDATION__: AdvisorResult | null;
+    __STACKGENOME_INITIAL_TAB__: string;
   }
 }
 
@@ -29,6 +33,9 @@ const tabs: Tab[] = [
   "Recommend",
   "AI Context",
 ];
+
+const isTab = (value: string): value is Tab =>
+  tabs.includes(value as Tab);
 
 const styles: Record<string, React.CSSProperties> = {
   body: {
@@ -96,6 +103,19 @@ const styles: Record<string, React.CSSProperties> = {
     background: "var(--vscode-input-background)",
     border: "1px solid var(--vscode-input-border)",
   },
+  recommendationHero: {
+    border: "1px solid var(--vscode-focusBorder)",
+    borderRadius: 10,
+    padding: 18,
+    marginBottom: 14,
+    background: "var(--vscode-sideBar-background)",
+  },
+  candidateGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: 10,
+    marginTop: 12,
+  },
 };
 
 const packageFinding = (
@@ -123,8 +143,151 @@ const groupTechnologies = (
   return groups;
 };
 
-const App = ({ data }: { data: ProjectEcosystem }) => {
-  const [tab, setTab] = useState<Tab>("Overview");
+const CandidateCard = ({
+  candidate,
+  primary = false,
+}: {
+  candidate: RecommendationCandidate;
+  primary?: boolean;
+}) => (
+  <div style={primary ? styles.recommendationHero : styles.card}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+      <div>
+        <strong>{candidate.name}</strong>
+        <div style={styles.muted}>{candidate.ecosystem}</div>
+      </div>
+      <span style={styles.pill}>
+        {candidate.existing ? "Already installed" : "New dependency"}
+      </span>
+    </div>
+
+    <p>{candidate.reason}</p>
+
+    <div>
+      {candidate.matchedCapabilities.map((capability) => (
+        <span key={capability} style={styles.pill}>
+          {capability}
+        </span>
+      ))}
+    </div>
+
+    {candidate.installedVersion ? (
+      <p style={styles.muted}>
+        Resolved version: {candidate.installedVersion}
+      </p>
+    ) : candidate.declaredVersion ? (
+      <p style={styles.muted}>
+        Declared version: {candidate.declaredVersion}
+      </p>
+    ) : null}
+
+    <p style={styles.muted}>
+      Confidence: {Math.round(candidate.confidence * 100)}%
+    </p>
+
+    {candidate.guidance?.preferredPatterns.length ? (
+      <div>
+        <strong>Preferred</strong>
+        <ul>
+          {candidate.guidance.preferredPatterns.map((pattern) => (
+            <li key={pattern}>{pattern}</li>
+          ))}
+        </ul>
+      </div>
+    ) : null}
+
+    {candidate.guidance?.avoidPatterns.length ? (
+      <div>
+        <strong>Avoid</strong>
+        <ul>
+          {candidate.guidance.avoidPatterns.map((pattern) => (
+            <li key={pattern}>{pattern}</li>
+          ))}
+        </ul>
+      </div>
+    ) : null}
+  </div>
+);
+
+const RecommendationView = ({
+  recommendation,
+}: {
+  recommendation: AdvisorResult | null;
+}) => {
+  if (!recommendation) {
+    return (
+      <div style={styles.card}>
+        <strong>Existing capabilities first</strong>
+        <p style={styles.muted}>
+          Run “StackGenome: Find Existing Capability” or
+          “StackGenome: Recommend Technology” from the Command Palette.
+          StackGenome will prefer libraries already present in this project
+          before proposing another dependency.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <section>
+      <div style={{ ...styles.card, marginBottom: 12 }}>
+        <strong>Implementation need</strong>
+        <p>{recommendation.intent}</p>
+        <div>
+          {recommendation.matchedCapabilities.map((capability) => (
+            <span key={capability} style={styles.pill}>
+              {capability}
+            </span>
+          ))}
+        </div>
+        <p style={styles.muted}>{recommendation.explanation}</p>
+      </div>
+
+      <div style={{ ...styles.card, marginBottom: 12 }}>
+        <strong>Dependency decision</strong>
+        <p>
+          {recommendation.newDependencyRequired === false
+            ? "✓ No new dependency required"
+            : recommendation.newDependencyRequired === true
+              ? "＋ New dependency required"
+              : "No package decision available"}
+        </p>
+      </div>
+
+      {recommendation.primary ? (
+        <>
+          <h2>Recommended</h2>
+          <CandidateCard candidate={recommendation.primary} primary />
+        </>
+      ) : null}
+
+      {recommendation.alternatives.length > 0 ? (
+        <>
+          <h2>Alternatives</h2>
+          <div style={styles.candidateGrid}>
+            {recommendation.alternatives.map((candidate) => (
+              <CandidateCard
+                key={candidate.packageId}
+                candidate={candidate}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
+};
+
+const App = ({
+  data,
+  recommendation,
+  initialTab,
+}: {
+  data: ProjectEcosystem;
+  recommendation: AdvisorResult | null;
+  initialTab: Tab;
+}) => {
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [packageSearch, setPackageSearch] = useState("");
   const [directOnly, setDirectOnly] = useState(true);
   const [ecosystem, setEcosystem] = useState("all");
@@ -386,16 +549,7 @@ const App = ({ data }: { data: ProjectEcosystem }) => {
       )}
 
       {tab === "Recommend" && (
-        <section>
-          <div style={styles.card}>
-            <strong>Existing capabilities first</strong>
-            <p style={styles.muted}>
-              StackGenome prefers libraries already present across the
-              detected project ecosystems before recommending a new
-              dependency.
-            </p>
-          </div>
-        </section>
+        <RecommendationView recommendation={recommendation} />
       )}
 
       {tab === "AI Context" && (
@@ -430,8 +584,16 @@ if (!rootElement) {
   throw new Error("StackGenome webview root element was not found.");
 }
 
+const initialTab = isTab(window.__STACKGENOME_INITIAL_TAB__)
+  ? window.__STACKGENOME_INITIAL_TAB__
+  : "Overview";
+
 createRoot(rootElement).render(
   <React.StrictMode>
-    <App data={window.__STACKGENOME_DATA__} />
+    <App
+      data={window.__STACKGENOME_DATA__}
+      recommendation={window.__STACKGENOME_RECOMMENDATION__}
+      initialTab={initialTab}
+    />
   </React.StrictMode>,
 );
