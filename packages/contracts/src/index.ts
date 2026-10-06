@@ -1,7 +1,26 @@
-export const PROJECT_ECOSYSTEM_SCHEMA_VERSION = "1.0" as const;
+export const PROJECT_ECOSYSTEM_SCHEMA_VERSION = "1.1" as const;
 
-export type PackageScope = "runtime" | "development" | "peer" | "optional" | "transitive" | "unknown";
-export type TechnologyKind = "language" | "framework" | "runtime" | "build-system" | "package-manager" | "testing" | "ui" | "database" | "other";
+export type PackageScope =
+  | "runtime"
+  | "development"
+  | "peer"
+  | "optional"
+  | "transitive"
+  | "unknown";
+
+export type PackageHealth = "healthy" | "warning" | "error" | "unknown";
+
+export type TechnologyKind =
+  | "language"
+  | "framework"
+  | "runtime"
+  | "build-system"
+  | "package-manager"
+  | "testing"
+  | "ui"
+  | "database"
+  | "other";
+
 export type FindingSeverity = "info" | "warning" | "error";
 
 export interface Technology {
@@ -12,14 +31,23 @@ export interface Technology {
   source: string;
 }
 
+export interface PackageGuidance {
+  preferredPatterns: string[];
+  avoidPatterns: string[];
+}
+
 export interface EcosystemPackage {
   id: string;
   name: string;
   ecosystem: string;
   scope: PackageScope;
+  direct: boolean;
   declaredVersion?: string;
   resolvedVersions: string[];
   purpose?: string;
+  category?: string;
+  guidance?: PackageGuidance;
+  health: PackageHealth;
 }
 
 export interface Capability {
@@ -31,10 +59,12 @@ export interface Capability {
 
 export interface EcosystemFinding {
   id: string;
+  code: string;
   severity: FindingSeverity;
   title: string;
   message: string;
   packageName?: string;
+  recommendation?: string;
 }
 
 export interface ProjectIdentity {
