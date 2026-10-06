@@ -18,40 +18,162 @@ describe("NodeEcosystemAnalyzer", () => {
       project: { name: "workspace", rootUri: "file:///workspace" },
       reader: reader({ "package.json": "{}" }),
     };
+
     await expect(analyzer.detect(context)).resolves.toBe(true);
   });
 
-  it("reports declared and resolved dependency versions", async () => {
+  it("reports direct and transitive packages with resolved versions", async () => {
     const analyzer = new NodeEcosystemAnalyzer();
     const context: AnalyzerContext = {
       project: { name: "workspace", rootUri: "file:///workspace" },
       reader: reader({
         "package.json": JSON.stringify({
           name: "sample",
-          packageManager: "pnpm@10.17.1",
-          dependencies: { react: "^19.0.0", zod: "^4.0.0" },
-          devDependencies: { typescript: "^5.9.0", vitest: "^3.0.0" },
+          packageManager: "npm@11.6.0",
+          engines: { node: ">=22" },
+          dependencies: {
+            react: "^19.0.0",
+            zod: "^4.0.0",
+          },
+          devDependencies: {
+            typescript: "^5.9.0",
+            vitest: "^3.0.0",
+          },
         }),
         "package-lock.json": JSON.stringify({
           packages: {
             "node_modules/react": { version: "19.1.1" },
             "node_modules/zod": { version: "4.1.5" },
+            "node_modules/typescript": { version: "5.9.3" },
+            "node_modules/vitest": { version: "3.2.4" },
+            "node_modules/tinybench": { version: "4.1.0" },
           },
         }),
       }),
     };
 
     const result = await analyzer.analyze(context);
+
+    expect(result.project).toEqual(expect.objectContaining({
+      name: "sample",
+      projectType: "Frontend application",
+    }));
     expect(result.packages).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: "react", declaredVersion: "^19.0.0", resolvedVersions: ["19.1.1"] }),
+      expect.objectContaining({
+        name: "react",
+        direct: true,
+        declaredVersion: "^19.0.0",
+        resolvedVersions: ["19.1.1"],
+      }),
+      expect.objectContaining({
+        name: "tinybench",
+        direct: false,
+        scope: "transitive",
+        resolvedVersions: ["4.1.0"],
+      }),
     ]));
     expect(result.capabilities).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "capability:validation" }),
-      expect.objectContaining({ id: "capability:testing" }),
+      expect.objectContaining({ id: "capability:unit-testing" }),
     ]));
     expect(result.technologies).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "framework:react" }),
       expect.objectContaining({ id: "language:typescript" }),
+      expect.objectContaining({ id: "package-manager:npm", version: "11.6.0" }),
+    ]));
+  });
+
+  it("detects duplicates, deprecated packages and peer mismatches", async () => {
+    const analyzer = new NodeEcosystemAnalyzer();
+    const context: AnalyzerContext = {
+      project: { name: "workspace", rootUri: "file:///workspace" },
+      reader: reader({
+        "package.json": JSON.stringify({
+          dependencies: {
+            react: "^19.0.0",
+            "legacy-widget": "^2.0.0",
+          },
+        }),
+        "package-lock.json": JSON.stringify({
+          packages: {
+            "node_modules/react": { version: "19.1.1" },
+            "node_modules/a/node_modules/react": { version: "18.3.1" },
+            "node_modules/legacy-widget": {
+              version: "2.0.0",
+              deprecated: "Package is no longer maintained.",
+              peerDependencies: { react: "^18.0.0" },
+            },
+          },
+        }),
+      }),
+    };
+
+    const result = await analyzer.analyze(context);
+    const codes = result.findings?.map((finding) => finding.code) ?? [];
+
+    expect(codes).toContain("duplicate-resolved-versions");
+    expect(codes).toContain("deprecated-package");
+    expect(codes).not.toContain("peer-dependency-mismatch");
+
+    const legacy = result.packages?.find((pkg) => pkg.name === "legacy-widget");
+    expect(legacy?.health).toBe("warning");
+  });
+
+  it("detects an incompatible peer when no compatible resolved version exists", async () => {
+    const analyzer = new NodeEcosystemAnalyzer();
+    const context: AnalyzerContext = {
+      project: { name: "workspace", rootUri: "file:///workspace" },
+      reader: reader({
+        "package.json": JSON.stringify({
+          dependencies: {
+            react: "^19.0.0",
+            "legacy-widget": "^2.0.0",
+          },
+        }),
+        "package-lock.json": JSON.stringify({
+          packages: {
+            "node_modules/react": { version: "19.1.1" },
+            "node_modules/legacy-widget": {
+              version: "2.0.0",
+              peerDependencies: { react: "^18.0.0" },
+            },
+          },
+        }),
+      }),
+    };
+
+    const result = await analyzer.analyze(context);
+    expect(result.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "peer-dependency-mismatch",
+        packageName: "legacy-widget",
+      }),
+    ]));
+  });
+
+  it("uses pnpm lockfiles when pnpm is declared", async () => {
+    const analyzer = new NodeEcosystemAnalyzer();
+    const context: AnalyzerContext = {
+      project: { name: "workspace", rootUri: "file:///workspace" },
+      reader: reader({
+        "package.json": JSON.stringify({
+          packageManager: "pnpm@10.17.1",
+          dependencies: { zod: "^4.0.0" },
+        }),
+        "pnpm-lock.yaml": `
+lockfileVersion: '9.0'
+packages:
+  zod@4.1.5: {}
+`,
+      }),
+    };
+
+    const result = await analyzer.analyze(context);
+    expect(result.packages).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "zod", resolvedVersions: ["4.1.5"] }),
+    ]));
+    expect(result.technologies).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "package-manager:pnpm", version: "10.17.1" }),
     ]));
   });
 });
