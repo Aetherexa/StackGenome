@@ -8,6 +8,7 @@ export interface PackageKnowledgeEntry {
   aliases?: string[];
   guidance?: PackageGuidance;
   frameworks?: string[];
+  preferredLanguages?: string[];
 }
 
 export interface CatalogTechnology extends PackageKnowledgeEntry {
@@ -202,6 +203,7 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     category: "validation",
     capabilities: ["validation"],
     primaryCapabilities: ["validation"],
+    preferredLanguages: ["typescript"],
     guidance: {
       preferredPatterns: [
         "Define reusable schemas near domain boundaries.",

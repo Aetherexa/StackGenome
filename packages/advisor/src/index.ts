@@ -40,6 +40,13 @@ const frameworkNames = (ecosystem: ProjectEcosystem): Set<string> =>
       .map((technology) => normalize(technology.name)),
   );
 
+const languageNames = (ecosystem: ProjectEcosystem): Set<string> =>
+  new Set(
+    ecosystem.technologies
+      .filter((technology) => technology.kind === "language")
+      .map((technology) => normalize(technology.name)),
+  );
+
 const projectPackageEcosystems = (ecosystem: ProjectEcosystem): Set<string> => {
   const values = new Set(ecosystem.packages.map((pkg) => pkg.ecosystem));
 
@@ -123,6 +130,7 @@ const newCandidates = (
   const packageIds = new Set(ecosystem.packages.map((pkg) => pkg.id));
   const ecosystems = projectPackageEcosystems(ecosystem);
   const frameworks = frameworkNames(ecosystem);
+  const languages = languageNames(ecosystem);
 
   return TECHNOLOGY_CATALOG
     .filter((candidate) => !packageIds.has(candidate.packageId))
@@ -146,9 +154,18 @@ const newCandidates = (
       )
         ? 0.12
         : 0;
+      const languageBonus = candidate.preferredLanguages?.some((language) =>
+        languages.has(normalize(language)),
+      )
+        ? 0.06
+        : 0;
       const confidence = Math.min(
-        0.96,
-        0.64 + matched.length * 0.08 + frameworkBonus + primaryBonus,
+        0.97,
+        0.64 +
+          matched.length * 0.08 +
+          frameworkBonus +
+          primaryBonus +
+          languageBonus,
       );
 
       return [{
