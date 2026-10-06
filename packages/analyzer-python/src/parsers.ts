@@ -171,13 +171,12 @@ export const parsePyProject = (
   if (parsed.tool?.poetry) managerHints.push("poetry");
   if (parsed.tool?.uv) managerHints.push("uv");
 
+  const name = parsed.project?.name ?? parsed.tool?.poetry?.name;
+  const requiresPython = parsed.project?.["requires-python"];
+
   return {
-    ...(parsed.project?.name || parsed.tool?.poetry?.name
-      ? { name: parsed.project?.name ?? parsed.tool?.poetry?.name }
-      : {}),
-    ...(parsed.project?.["requires-python"]
-      ? { requiresPython: parsed.project["requires-python"] }
-      : {}),
+    ...(name ? { name } : {}),
+    ...(requiresPython ? { requiresPython } : {}),
     declarations,
     managerHints,
   };
