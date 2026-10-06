@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@stackgenome/contracts": ["packages/contracts/src/index.ts"],
+      "@stackgenome/core": ["packages/core/src/index.ts"],
+      "@stackgenome/analyzer-node": ["packages/analyzer-node/src/index.ts"]
+    }
+  }
+}

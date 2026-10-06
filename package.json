@@ -1,0 +1,24 @@
+{
+  "name": "stackgenome",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Language-agnostic project ecosystem intelligence for developers and AI assistants.",
+  "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "build": "pnpm build:packages && pnpm --filter @stackgenome/vscode-extension build",
+    "build:packages": "tsc -b packages/contracts packages/core packages/analyzer-node",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

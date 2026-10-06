@@ -1,0 +1,35 @@
+{
+  "name": "@stackgenome/vscode-extension",
+  "displayName": "StackGenome",
+  "description": "Project ecosystem intelligence for developers and AI assistants.",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "publisher": "aetherexa",
+  "engines": { "vscode": "^1.100.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onCommand:stackgenome.analyzeProject", "onCommand:stackgenome.openReport"],
+  "main": "./dist/extension.cjs",
+  "contributes": {
+    "commands": [
+      { "command": "stackgenome.analyzeProject", "title": "StackGenome: Analyze Project" },
+      { "command": "stackgenome.openReport", "title": "StackGenome: Open Ecosystem Report" }
+    ]
+  },
+  "scripts": { "build": "node ./build.mjs", "typecheck": "tsc -b --pretty false" },
+  "dependencies": {
+    "@stackgenome/analyzer-node": "workspace:*",
+    "@stackgenome/contracts": "workspace:*",
+    "@stackgenome/core": "workspace:*",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@types/vscode": "^1.100.0",
+    "esbuild": "^0.25.9",
+    "typescript": "^5.9.3"
+  }
+}

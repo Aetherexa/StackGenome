@@ -1,0 +1,10 @@
+{
+  "name": "@stackgenome/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": { "@stackgenome/contracts": "workspace:*" },
+  "scripts": { "build": "tsc -b", "typecheck": "tsc -b --pretty false" }
+}
