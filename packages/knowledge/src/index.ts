@@ -143,6 +143,68 @@ export const CAPABILITY_DEFINITIONS: Record<string, CapabilityDefinition> = {
     name: "Azure integration",
     aliases: ["azure", "microsoft azure"],
   },
+  internationalization: {
+    name: "Internationalization",
+    aliases: [
+      "internationalization",
+      "internationalisation",
+      "i18n",
+      "localization",
+      "localisation",
+      "l10n",
+      "translation",
+      "translations",
+      "multilingual",
+      "multi language",
+      "multiple languages",
+      "language support",
+    ],
+  },
+  logging: {
+    name: "Application logging",
+    aliases: [
+      "logging",
+      "logger",
+      "application logs",
+      "structured logs",
+      "log messages",
+    ],
+  },
+  "date-time": {
+    name: "Date and time handling",
+    aliases: [
+      "date time",
+      "datetime",
+      "date handling",
+      "time handling",
+      "time zones",
+      "timezone",
+      "date formatting",
+      "time formatting",
+    ],
+  },
+  serialization: {
+    name: "Serialization",
+    aliases: [
+      "serialization",
+      "serialisation",
+      "serialize",
+      "serialise",
+      "deserialize",
+      "deserialise",
+      "json serialization",
+    ],
+  },
+  "feature-flags": {
+    name: "Feature flags",
+    aliases: [
+      "feature flag",
+      "feature flags",
+      "feature toggle",
+      "feature toggles",
+      "feature management",
+    ],
+  },
 };
 
 export const CAPABILITY_NAMES: Record<string, string> = Object.fromEntries(
@@ -368,6 +430,73 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     category: "ai",
     capabilities: ["ai"],
   },
+  i18next: {
+    purpose: "Internationalization and localization framework",
+    category: "internationalization",
+    capabilities: ["internationalization"],
+    primaryCapabilities: ["internationalization"],
+    aliases: ["i18n", "localization", "translations"],
+    preferredLanguages: ["javascript", "typescript"],
+    guidance: {
+      preferredPatterns: [
+        "Reuse a shared i18next instance and central translation resources.",
+        "Keep translation keys stable and namespaced by feature or domain.",
+      ],
+      avoidPatterns: [
+        "Avoid introducing a second internationalization framework when i18next already covers the requirement.",
+      ],
+    },
+  },
+  "react-i18next": {
+    purpose: "React bindings for i18next internationalization",
+    category: "internationalization",
+    capabilities: ["internationalization"],
+    primaryCapabilities: ["internationalization"],
+    aliases: ["react i18n", "react internationalization"],
+    frameworks: ["react", "next"],
+  },
+  "@formatjs/intl": {
+    purpose: "Internationalization primitives and message formatting",
+    category: "internationalization",
+    capabilities: ["internationalization"],
+    primaryCapabilities: ["internationalization"],
+  },
+  pino: {
+    purpose: "High-performance structured application logger",
+    category: "logging",
+    capabilities: ["logging"],
+    primaryCapabilities: ["logging"],
+  },
+  winston: {
+    purpose: "Configurable application logging library",
+    category: "logging",
+    capabilities: ["logging"],
+    primaryCapabilities: ["logging"],
+  },
+  "date-fns": {
+    purpose: "Modular date utility library",
+    category: "date-time",
+    capabilities: ["date-time"],
+    primaryCapabilities: ["date-time"],
+  },
+  dayjs: {
+    purpose: "Lightweight date and time utility library",
+    category: "date-time",
+    capabilities: ["date-time"],
+    primaryCapabilities: ["date-time"],
+  },
+  superjson: {
+    purpose: "Extended JSON serialization for JavaScript values",
+    category: "serialization",
+    capabilities: ["serialization"],
+    primaryCapabilities: ["serialization"],
+  },
+  flagsmith: {
+    purpose: "Feature flag and remote configuration client",
+    category: "feature-flags",
+    capabilities: ["feature-flags"],
+    primaryCapabilities: ["feature-flags"],
+  },
 };
 
 export const PYTHON_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
@@ -492,6 +621,37 @@ export const PYTHON_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     purpose: "Static type checker for Python",
     category: "quality",
     capabilities: ["type-checking"],
+  },
+  babel: {
+    purpose: "Internationalization and localization utilities",
+    category: "internationalization",
+    capabilities: ["internationalization"],
+    primaryCapabilities: ["internationalization"],
+    aliases: ["i18n", "localization", "translations"],
+  },
+  structlog: {
+    purpose: "Structured logging for Python applications",
+    category: "logging",
+    capabilities: ["logging"],
+    primaryCapabilities: ["logging"],
+  },
+  "python-dateutil": {
+    purpose: "Extensions to Python date and time handling",
+    category: "date-time",
+    capabilities: ["date-time"],
+    primaryCapabilities: ["date-time"],
+  },
+  orjson: {
+    purpose: "Fast JSON serialization and deserialization",
+    category: "serialization",
+    capabilities: ["serialization"],
+    primaryCapabilities: ["serialization"],
+  },
+  flagsmith: {
+    purpose: "Feature flag and remote configuration client",
+    category: "feature-flags",
+    capabilities: ["feature-flags"],
+    primaryCapabilities: ["feature-flags"],
   },
 };
 

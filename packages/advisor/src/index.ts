@@ -14,20 +14,88 @@ import {
 const normalize = (value: string): string =>
   value.toLowerCase().replace(/[^a-z0-9+#.]+/g, " ").replace(/\s+/g, " ").trim();
 
-const capabilityMatches = (intent: string): string[] => {
-  const normalized = normalize(intent);
-  const scored = Object.entries(CAPABILITY_DEFINITIONS)
-    .map(([id, definition]) => {
-      const phrases = [definition.name, ...definition.aliases];
-      const matched = phrases.filter((phrase) =>
-        normalized.includes(normalize(phrase)),
-      );
-      return { id, score: matched.length };
-    })
-    .filter((entry) => entry.score > 0)
-    .sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));
+const STOP_WORDS = new Set([
+  "a",
+  "add",
+  "an",
+  "and",
+  "app",
+  "application",
+  "for",
+  "implement",
+  "implementation",
+  "in",
+  "integrate",
+  "my",
+  "need",
+  "project",
+  "support",
+  "the",
+  "this",
+  "to",
+  "use",
+  "with",
+]);
 
-  return scored.map((entry) => entry.id);
+const tokens = (value: string): string[] =>
+  normalize(value)
+    .split(" ")
+    .filter((token) => token && !STOP_WORDS.has(token));
+
+const phraseScore = (intent: string, phrase: string): number => {
+  const normalizedIntent = ` ${normalize(intent)} `;
+  const normalizedPhrase = normalize(phrase);
+  if (!normalizedPhrase) return 0;
+
+  if (normalizedIntent.includes(` ${normalizedPhrase} `)) {
+    return normalizedPhrase.includes(" ") ? 8 : 6;
+  }
+
+  const intentTokens = new Set(tokens(intent));
+  const phraseTokens = tokens(phrase);
+  if (phraseTokens.length === 0) return 0;
+
+  const matched = phraseTokens.filter((token) => intentTokens.has(token)).length;
+  if (matched === phraseTokens.length) return 5;
+  if (matched > 0 && matched / phraseTokens.length >= 0.66) return 3;
+  return 0;
+};
+
+const capabilityMatches = (intent: string): string[] => {
+  const scores = new Map<string, number>();
+
+  for (const [id, definition] of Object.entries(CAPABILITY_DEFINITIONS)) {
+    const score = Math.max(
+      ...[definition.name, ...definition.aliases].map((phrase) =>
+        phraseScore(intent, phrase),
+      ),
+    );
+    if (score > 0) scores.set(id, score);
+  }
+
+  for (const candidate of TECHNOLOGY_CATALOG) {
+    const packageScore = Math.max(
+      phraseScore(intent, candidate.name),
+      ...(candidate.aliases ?? []).map((alias) =>
+        phraseScore(intent, alias),
+      ),
+    );
+    if (packageScore === 0) continue;
+
+    for (const capability of candidate.capabilities ?? []) {
+      scores.set(
+        capability,
+        Math.max(scores.get(capability) ?? 0, packageScore + 1),
+      );
+    }
+  }
+
+  return [...scores.entries()]
+    .sort(
+      ([leftId, leftScore], [rightId, rightScore]) =>
+        rightScore - leftScore || leftId.localeCompare(rightId),
+    )
+    .map(([id]) => id);
 };
 
 const installedVersion = (pkg: EcosystemPackage): string | undefined =>
@@ -201,7 +269,7 @@ export class CapabilityAdvisor {
         newDependencyRequired: null,
         alternatives: [],
         explanation:
-          "StackGenome could not map this request to a known project capability yet. No dependency recommendation was made.",
+          "StackGenome could not confidently map this request to a dependency-backed capability in its V1 knowledge catalog.",
       };
     }
 

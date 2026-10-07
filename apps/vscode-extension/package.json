@@ -46,8 +46,7 @@
   "activationEvents": [
     "onCommand:stackgenome.analyzeProject",
     "onCommand:stackgenome.openReport",
-    "onCommand:stackgenome.findExistingCapability",
-    "onCommand:stackgenome.recommendTechnology"
+    "onCommand:stackgenome.findCapability"
   ],
   "main": "./dist/extension.cjs",
   "contributes": {
@@ -61,12 +60,8 @@
         "title": "StackGenome: Open Ecosystem Report"
       },
       {
-        "command": "stackgenome.findExistingCapability",
-        "title": "StackGenome: Find Existing Capability"
-      },
-      {
-        "command": "stackgenome.recommendTechnology",
-        "title": "StackGenome: Recommend Technology"
+        "command": "stackgenome.findCapability",
+        "title": "StackGenome: Find Capability"
       }
     ]
   },

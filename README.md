@@ -13,8 +13,8 @@ The first public release is intentionally focused on the standalone developer ex
 - direct and transitive package intelligence
 - package purpose and capability detection
 - dependency-health findings
-- existing-capability discovery
-- ecosystem-aware technology recommendations
+- existing-first capability discovery
+- ecosystem-aware technology recommendations when a new dependency is actually needed
 
 V1 supports Node/JavaScript/TypeScript and Python projects through pluggable ecosystem analyzers.
 

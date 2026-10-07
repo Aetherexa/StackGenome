@@ -227,6 +227,134 @@ describe("CapabilityAdvisor", () => {
     expect(result.primary).toBeUndefined();
   });
 
+  it("maps internationalization intent and recommends i18next for Node projects", () => {
+    const ecosystem = base({
+      analyzers: ["node"],
+      technologies: [
+        {
+          id: "language:typescript",
+          name: "TypeScript",
+          kind: "language",
+          ecosystem: "node",
+          source: "tsconfig.json",
+        },
+      ],
+    });
+
+    const result = new CapabilityAdvisor().recommend(ecosystem, {
+      intent: "add internationalization",
+      mode: "existing-first",
+    });
+
+    expect(result.matchedCapabilities).toContain("internationalization");
+    expect(result.newDependencyRequired).toBe(true);
+    expect(result.primary?.name).toBe("i18next");
+  });
+
+  it("reuses installed i18next instead of recommending another dependency", () => {
+    const ecosystem = base({
+      analyzers: ["node"],
+      packages: [
+        {
+          id: "npm:i18next",
+          name: "i18next",
+          ecosystem: "npm",
+          scope: "runtime",
+          direct: true,
+          declaredVersion: "^25.0.0",
+          resolvedVersions: ["25.5.2"],
+          health: "healthy",
+        },
+      ],
+    });
+
+    const result = new CapabilityAdvisor().recommend(ecosystem, {
+      intent: "support translations and localization",
+      mode: "existing-first",
+    });
+
+    expect(result.newDependencyRequired).toBe(false);
+    expect(result.primary).toEqual(
+      expect.objectContaining({
+        name: "i18next",
+        existing: true,
+      }),
+    );
+  });
+
+  it("ranks react-i18next for React internationalization", () => {
+    const ecosystem = base({
+      analyzers: ["node"],
+      technologies: [
+        {
+          id: "framework:react",
+          name: "React",
+          kind: "framework",
+          ecosystem: "node",
+          source: "react",
+        },
+      ],
+    });
+
+    const result = new CapabilityAdvisor().recommend(ecosystem, {
+      intent: "add i18n translations",
+      mode: "existing-first",
+    });
+
+    expect(result.primary?.name).toBe("react-i18next");
+  });
+
+  it("recommends Python Babel for Python internationalization", () => {
+    const ecosystem = base({
+      analyzers: ["python"],
+      technologies: [
+        {
+          id: "language:python",
+          name: "Python",
+          kind: "language",
+          ecosystem: "python",
+          source: "pyproject.toml",
+        },
+      ],
+    });
+
+    const result = new CapabilityAdvisor().recommend(ecosystem, {
+      intent: "localisation and translations",
+      mode: "existing-first",
+    });
+
+    expect(result.primary).toEqual(
+      expect.objectContaining({
+        name: "babel",
+        ecosystem: "pypi",
+      }),
+    );
+  });
+
+  it("maps package-name requests to the package capability", () => {
+    const ecosystem = base({ analyzers: ["node"] });
+
+    const result = new CapabilityAdvisor().recommend(ecosystem, {
+      intent: "should we use pino?",
+      mode: "existing-first",
+    });
+
+    expect(result.matchedCapabilities).toContain("logging");
+    expect(result.primary?.name).toBe("pino");
+  });
+
+  it("does not confuse partial words such as capabilities with API", () => {
+    const result = new CapabilityAdvisor().recommend(
+      base({ analyzers: ["node"] }),
+      {
+        intent: "show project capabilities",
+        mode: "existing-first",
+      },
+    );
+
+    expect(result.matchedCapabilities).not.toContain("api");
+  });
+
   it("returns no recommendation for an unknown intent", () => {
     const result = new CapabilityAdvisor().recommend(base(), {
       intent: "make the project magical",
