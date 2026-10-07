@@ -75,6 +75,21 @@ export interface ProjectIdentity {
   projectType?: string;
 }
 
+export type AnalysisStatus = "success" | "partial" | "unsupported" | "failed";
+
+export interface AnalysisDiagnostic {
+  code: string;
+  severity: FindingSeverity;
+  message: string;
+  analyzerId?: string;
+}
+
+export interface ProjectAnalysisState {
+  status: AnalysisStatus;
+  rootUri: string;
+  diagnostics: AnalysisDiagnostic[];
+}
+
 export interface ProjectEcosystem {
   schemaVersion: typeof PROJECT_ECOSYSTEM_SCHEMA_VERSION;
   generatedAt: string;
@@ -84,6 +99,7 @@ export interface ProjectEcosystem {
   capabilities: Capability[];
   findings: EcosystemFinding[];
   analyzers: string[];
+  analysis?: ProjectAnalysisState;
 }
 
 export type AdvisorMode = "existing-only" | "existing-first";

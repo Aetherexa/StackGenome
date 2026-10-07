@@ -74,7 +74,10 @@ const parseDeclaredManager = (
 const chooseLockfile = async (
   context: AnalyzerContext,
   preferred: NodePackageManager | undefined,
-): Promise<LockfileAnalysis | undefined> => {
+): Promise<{
+  lockfile?: LockfileAnalysis;
+  findings: EcosystemFinding[];
+}> => {
   const readers: Record<
     NodePackageManager,
     { file: string; parse: (text: string) => LockfileAnalysis }
@@ -88,14 +91,31 @@ const chooseLockfile = async (
     ? [preferred, ...(["npm", "pnpm", "yarn"] as const).filter((name) => name !== preferred)]
     : (["npm", "pnpm", "yarn"] as const);
 
+  const findings: EcosystemFinding[] = [];
+
   for (const manager of order) {
     const reader = readers[manager];
-    if (await context.reader.exists(reader.file)) {
-      return reader.parse(await context.reader.readText(reader.file));
+    if (!(await context.reader.exists(reader.file))) continue;
+
+    try {
+      return {
+        lockfile: reader.parse(await context.reader.readText(reader.file)),
+        findings,
+      };
+    } catch (error) {
+      findings.push({
+        id: `lockfile-parse:${reader.file}`,
+        code: "lockfile-parse-failed",
+        severity: "warning",
+        title: "Lockfile could not be parsed",
+        message: `${reader.file} could not be parsed: ${error instanceof Error ? error.message : String(error)}`,
+        recommendation:
+          "Regenerate the lockfile or verify it is valid. StackGenome continued with manifest-level analysis.",
+      });
     }
   }
 
-  return undefined;
+  return { findings };
 };
 
 const declaredSections = (
@@ -315,18 +335,22 @@ const detectTechnologies = (
   manifest: PackageManifest,
   directNames: Set<string>,
   manager: { name: NodePackageManager; version?: string; source: string } | undefined,
+  hasPackageManifest: boolean,
+  hasTypeScriptConfig: boolean,
 ): Technology[] => {
-  const technologies: Technology[] = [
-    {
+  const technologies: Technology[] = [];
+
+  if (hasPackageManifest) {
+    technologies.push({
       id: "language:javascript",
       name: "JavaScript",
       kind: "language",
       ecosystem: "node",
-      source: "package.json",
-    },
-  ];
+      source: hasTypeScriptConfig ? "tsconfig.json" : "package.json",
+    });
+  }
 
-  if (directNames.has("typescript")) {
+  if (directNames.has("typescript") || hasTypeScriptConfig) {
     technologies.push({
       id: "language:typescript",
       name: "TypeScript",
@@ -406,17 +430,28 @@ export class NodeEcosystemAnalyzer implements EcosystemAnalyzer {
   readonly displayName = "Node.js ecosystem";
 
   async detect(context: AnalyzerContext): Promise<boolean> {
-    return context.reader.exists("package.json");
+    return (
+      (await context.reader.exists("package.json")) ||
+      (await context.reader.exists("tsconfig.json"))
+    );
   }
 
   async analyze(context: AnalyzerContext): Promise<Partial<ProjectEcosystem>> {
-    const manifest = parseJson<PackageManifest>(
-      await context.reader.readText("package.json"),
-      "package.json",
-    );
+    const hasPackageManifest = await context.reader.exists("package.json");
+    const hasTypeScriptConfig = await context.reader.exists("tsconfig.json");
+    const manifest = hasPackageManifest
+      ? parseJson<PackageManifest>(
+          await context.reader.readText("package.json"),
+          "package.json",
+        )
+      : {};
 
     const declaredManager = parseDeclaredManager(manifest.packageManager);
-    const lockfile = await chooseLockfile(context, declaredManager?.name);
+    const lockfileSelection = await chooseLockfile(
+      context,
+      declaredManager?.name,
+    );
+    const lockfile = lockfileSelection.lockfile;
     const resolvedPackages = lockfile?.packages ?? [];
     const versions = groupResolvedVersions(resolvedPackages);
     const directPackages = createDirectPackages(manifest, versions);
@@ -424,6 +459,7 @@ export class NodeEcosystemAnalyzer implements EcosystemAnalyzer {
     const transitivePackages = createTransitivePackages(resolvedPackages, directNames);
 
     const findings = [
+      ...lockfileSelection.findings,
       ...duplicateFindings(versions),
       ...deprecatedFindings(resolvedPackages),
       ...unresolvedFindings(directPackages, Boolean(lockfile)),
@@ -456,7 +492,13 @@ export class NodeEcosystemAnalyzer implements EcosystemAnalyzer {
         ...(projectType ? { projectType } : {}),
       },
       packages: allPackages,
-      technologies: detectTechnologies(manifest, directNames, manager),
+      technologies: detectTechnologies(
+        manifest,
+        directNames,
+        manager,
+        hasPackageManifest,
+        hasTypeScriptConfig,
+      ),
       capabilities: detectCapabilities(directPackages),
       findings,
     };

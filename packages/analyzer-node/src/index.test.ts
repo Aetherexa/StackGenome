@@ -177,3 +177,50 @@ packages:
     ]));
   });
 });
+
+
+  it("detects TypeScript from tsconfig.json without a direct typescript dependency", async () => {
+    const analyzer = new NodeEcosystemAnalyzer();
+    const context: AnalyzerContext = {
+      project: { name: "legacy-ts", rootUri: "file:///legacy-ts" },
+      reader: reader({
+        "package.json": JSON.stringify({ dependencies: { lodash: "^4.17.21" } }),
+        "tsconfig.json": JSON.stringify({ compilerOptions: { target: "es5" } }),
+      }),
+    };
+
+    const result = await analyzer.analyze(context);
+    expect(result.technologies).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: "language:typescript",
+        source: "tsconfig.json",
+      }),
+    ]));
+  });
+
+  it("continues manifest analysis when a lockfile cannot be parsed", async () => {
+    const analyzer = new NodeEcosystemAnalyzer();
+    const context: AnalyzerContext = {
+      project: { name: "workspace", rootUri: "file:///workspace" },
+      reader: reader({
+        "package.json": JSON.stringify({
+          dependencies: { zod: "^4.0.0" },
+        }),
+        "yarn.lock": "not: [valid",
+      }),
+    };
+
+    const result = await analyzer.analyze(context);
+    expect(result.packages).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: "zod",
+        direct: true,
+        declaredVersion: "^4.0.0",
+      }),
+    ]));
+    expect(result.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "lockfile-parse-failed",
+      }),
+    ]));
+  });
