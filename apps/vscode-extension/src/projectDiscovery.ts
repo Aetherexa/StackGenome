@@ -32,10 +32,10 @@ const markerScore = (markers: string[]): number => {
   return 0;
 };
 
-export const selectProjectCandidate = (
-  candidates: ProjectCandidate[],
+export const selectProjectCandidate = <T extends ProjectCandidate>(
+  candidates: T[],
   activeFilePath?: string,
-): ProjectCandidate | undefined => {
+): T | undefined => {
   if (candidates.length === 0) return undefined;
 
   if (activeFilePath) {
