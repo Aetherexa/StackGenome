@@ -1,5 +1,5 @@
 {
-  "name": "@stackgenome/vscode-extension",
+  "name": "stackgenome",
   "displayName": "StackGenome",
   "description": "Project ecosystem intelligence for developers and AI assistants.",
   "version": "0.1.0",
@@ -51,6 +51,7 @@
     "@stackgenome/context": "workspace:*",
     "@stackgenome/contracts": "workspace:*",
     "@stackgenome/core": "workspace:*",
+    "@stackgenome/service": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

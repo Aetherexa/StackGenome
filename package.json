@@ -1,5 +1,5 @@
 {
-  "name": "stackgenome",
+  "name": "stackgenome-monorepo",
   "version": "0.1.0",
   "private": true,
   "description": "Language-agnostic project ecosystem intelligence for developers and AI assistants.",
@@ -8,8 +8,8 @@
     "node": ">=20.11.0"
   },
   "scripts": {
-    "build": "pnpm build:packages && pnpm --filter @stackgenome/vscode-extension build",
-    "build:packages": "tsc -b packages/contracts packages/knowledge packages/core packages/analyzer-node packages/analyzer-python packages/advisor packages/context",
+    "build": "pnpm build:packages && pnpm --filter stackgenome build",
+    "build:packages": "tsc -b packages/contracts packages/knowledge packages/core packages/analyzer-node packages/analyzer-python packages/advisor packages/context packages/service",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "lint": "biome lint .",

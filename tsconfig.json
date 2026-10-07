@@ -8,6 +8,7 @@
     { "path": "./packages/analyzer-python" },
     { "path": "./packages/advisor" },
     { "path": "./packages/context" },
+    { "path": "./packages/service" },
     { "path": "./apps/vscode-extension" }
   ]
 }
