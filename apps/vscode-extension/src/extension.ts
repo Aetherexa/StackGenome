@@ -1,17 +1,19 @@
 import { randomBytes } from "node:crypto";
-import { CapabilityAdvisor } from "@stackgenome/advisor";
 import { NodeEcosystemAnalyzer } from "@stackgenome/analyzer-node";
 import { PythonEcosystemAnalyzer } from "@stackgenome/analyzer-python";
 import { ProjectAIContextGenerator } from "@stackgenome/context";
-import type {
-  AIContextProfile,
-  AdvisorMode,
-  AdvisorResult,
-  ProjectAIContext,
-  ProjectEcosystem,
-  WorkspaceReader,
+import {
+  STACKGENOME_EXTENSION_API_VERSION,
+  type AIContextProfile,
+  type AdvisorMode,
+  type AdvisorResult,
+  type ProjectAIContext,
+  type ProjectEcosystem,
+  type StackGenomeExtensionApi,
+  type WorkspaceReader,
 } from "@stackgenome/contracts";
 import { AnalyzerRegistry, ProjectEcosystemEngine } from "@stackgenome/core";
+import { ProjectIntelligenceService } from "@stackgenome/service";
 import * as vscode from "vscode";
 
 type AIContextProfiles = Record<AIContextProfile, ProjectAIContext>;
@@ -22,13 +24,16 @@ const AI_CONTEXT_PROFILES: AIContextProfile[] = [
   "detailed",
 ];
 
+const INTELLIGENCE_PATTERNS = [
+  "**/{package.json,package-lock.json,pnpm-lock.yaml,yarn.lock,pyproject.toml,poetry.lock,uv.lock,Pipfile,Pipfile.lock}",
+  "**/requirements*.txt",
+];
+
 const isAIContextProfile = (value: unknown): value is AIContextProfile =>
   typeof value === "string" &&
   AI_CONTEXT_PROFILES.includes(value as AIContextProfile);
 
 const contextGenerator = new ProjectAIContextGenerator();
-
-let latestAnalysis: ProjectEcosystem | undefined;
 let latestRecommendation: AdvisorResult | undefined;
 
 class VsCodeWorkspaceReader implements WorkspaceReader {
@@ -53,7 +58,7 @@ class VsCodeWorkspaceReader implements WorkspaceReader {
   }
 }
 
-const analyzeWorkspace = async (): Promise<ProjectEcosystem> => {
+const analyzeWorkspaceUncached = async (): Promise<ProjectEcosystem> => {
   const folder = vscode.workspace.workspaceFolders?.[0];
   if (!folder) {
     throw new Error(
@@ -217,6 +222,7 @@ const openReport = (
 
 const runAdvisor = async (
   context: vscode.ExtensionContext,
+  service: ProjectIntelligenceService,
   mode: AdvisorMode,
 ): Promise<void> => {
   const intent = await vscode.window.showInputBox({
@@ -232,18 +238,15 @@ const runAdvisor = async (
 
   if (!intent?.trim()) return;
 
-  latestAnalysis = await analyzeWorkspace();
-  latestRecommendation = new CapabilityAdvisor().recommend(
-    latestAnalysis,
-    {
-      intent: intent.trim(),
-      mode,
-    },
+  latestRecommendation = await service.recommend(
+    intent.trim(),
+    mode,
   );
+  const analysis = await service.getProjectEcosystem();
 
   openReport(
     context,
-    latestAnalysis,
+    analysis,
     latestRecommendation,
     "Recommend",
   );
@@ -251,6 +254,7 @@ const runAdvisor = async (
 
 const generateAIContext = async (
   context: vscode.ExtensionContext,
+  service: ProjectIntelligenceService,
 ): Promise<void> => {
   const selection = await vscode.window.showQuickPick(
     [
@@ -278,17 +282,64 @@ const generateAIContext = async (
 
   if (!selection) return;
 
-  latestAnalysis = await analyzeWorkspace();
+  const analysis = await service.getProjectEcosystem();
   openReport(
     context,
-    latestAnalysis,
+    analysis,
     latestRecommendation,
     "AI Context",
     selection.profile,
   );
 };
 
-export const activate = (context: vscode.ExtensionContext): void => {
+const registerIntelligenceWatchers = (
+  context: vscode.ExtensionContext,
+  service: ProjectIntelligenceService,
+): void => {
+  const invalidate = (): void => {
+    service.invalidate();
+    latestRecommendation = undefined;
+  };
+
+  for (const pattern of INTELLIGENCE_PATTERNS) {
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    context.subscriptions.push(
+      watcher,
+      watcher.onDidCreate(invalidate),
+      watcher.onDidChange(invalidate),
+      watcher.onDidDelete(invalidate),
+    );
+  }
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(invalidate),
+  );
+};
+
+export const activate = (
+  context: vscode.ExtensionContext,
+): StackGenomeExtensionApi => {
+  const service = new ProjectIntelligenceService(
+    analyzeWorkspaceUncached,
+  );
+
+  registerIntelligenceWatchers(context, service);
+
+  const api: StackGenomeExtensionApi = {
+    apiVersion: STACKGENOME_EXTENSION_API_VERSION,
+    getProjectEcosystem: (options) =>
+      service.getProjectEcosystem(options),
+    getAIContext: (profile, options) =>
+      service.getAIContext(profile, options),
+    recommend: (intent, mode, options) =>
+      service.recommend(intent, mode, options),
+    refresh: () => service.refresh(),
+    invalidate: () => {
+      service.invalidate();
+      latestRecommendation = undefined;
+    },
+  };
+
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "stackgenome.analyzeProject",
@@ -300,9 +351,9 @@ export const activate = (context: vscode.ExtensionContext): void => {
               title: "StackGenome: analyzing project ecosystem",
             },
             async () => {
-              latestAnalysis = await analyzeWorkspace();
+              const analysis = await service.refresh();
               latestRecommendation = undefined;
-              openReport(context, latestAnalysis);
+              openReport(context, analysis);
             },
           );
         } catch (error) {
@@ -316,10 +367,10 @@ export const activate = (context: vscode.ExtensionContext): void => {
       "stackgenome.openReport",
       async () => {
         try {
-          latestAnalysis ??= await analyzeWorkspace();
+          const analysis = await service.getProjectEcosystem();
           openReport(
             context,
-            latestAnalysis,
+            analysis,
             latestRecommendation,
             latestRecommendation ? "Recommend" : "Overview",
           );
@@ -334,7 +385,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
       "stackgenome.findExistingCapability",
       async () => {
         try {
-          await runAdvisor(context, "existing-only");
+          await runAdvisor(context, service, "existing-only");
         } catch (error) {
           await vscode.window.showErrorMessage(
             error instanceof Error ? error.message : String(error),
@@ -346,7 +397,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
       "stackgenome.recommendTechnology",
       async () => {
         try {
-          await runAdvisor(context, "existing-first");
+          await runAdvisor(context, service, "existing-first");
         } catch (error) {
           await vscode.window.showErrorMessage(
             error instanceof Error ? error.message : String(error),
@@ -358,7 +409,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
       "stackgenome.generateAIContext",
       async () => {
         try {
-          await generateAIContext(context);
+          await generateAIContext(context, service);
         } catch (error) {
           await vscode.window.showErrorMessage(
             error instanceof Error ? error.message : String(error),
@@ -367,6 +418,8 @@ export const activate = (context: vscode.ExtensionContext): void => {
       },
     ),
   );
+
+  return api;
 };
 
 export const deactivate = (): void => {};

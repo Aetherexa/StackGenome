@@ -12,7 +12,8 @@
     { "path": "../../packages/analyzer-node" },
     { "path": "../../packages/analyzer-python" },
     { "path": "../../packages/advisor" },
-    { "path": "../../packages/context" }
+    { "path": "../../packages/context" },
+    { "path": "../../packages/service" }
   ],
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

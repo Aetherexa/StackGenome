@@ -180,6 +180,30 @@ export interface ProjectAIContext {
   stats: AIContextStats;
 }
 
+export const STACKGENOME_EXTENSION_API_VERSION = "1.0" as const;
+
+export interface StackGenomeAnalysisOptions {
+  forceRefresh?: boolean;
+}
+
+export interface StackGenomeExtensionApi {
+  apiVersion: typeof STACKGENOME_EXTENSION_API_VERSION;
+  getProjectEcosystem(
+    options?: StackGenomeAnalysisOptions,
+  ): Promise<ProjectEcosystem>;
+  getAIContext(
+    profile?: AIContextProfile,
+    options?: StackGenomeAnalysisOptions,
+  ): Promise<ProjectAIContext>;
+  recommend(
+    intent: string,
+    mode?: AdvisorMode,
+    options?: StackGenomeAnalysisOptions,
+  ): Promise<AdvisorResult>;
+  refresh(): Promise<ProjectEcosystem>;
+  invalidate(): void;
+}
+
 export interface WorkspaceReader {
   exists(relativePath: string): Promise<boolean>;
   readText(relativePath: string): Promise<string>;
