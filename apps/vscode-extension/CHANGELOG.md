@@ -24,8 +24,9 @@ All notable changes to StackGenome are documented here.
 - Ecosystem-aware technology recommendations with implementation guidance.
 
 ### VS Code experience
-- Ecosystem overview.
-- Searchable package report.
-- Health findings.
-- Capability view.
-- Recommendation workflow.
+- Project Technology Intelligence overview centered on Project DNA.
+- Existing-capability cards show what the project can already do.
+- Inline technology-decision workflow on the Overview.
+- Dedicated Technology, Capabilities, Dependencies, and Health views.
+- Searchable dependency intelligence with graceful unknown-package states.
+- Health findings separated into actionable errors/warnings and informational observations.

@@ -1,7 +1,7 @@
 {
   "name": "stackgenome",
   "displayName": "StackGenome",
-  "description": "Understand your project's dependencies, versions, capabilities, and compatibility before adding something new.",
+  "description": "Understand your project's technology stack, existing capabilities, dependency health, and what to reuse before adding something new.",
   "version": "1.0.0",
   "type": "module",
   "publisher": "aetherexa",
@@ -21,10 +21,11 @@
     "theme": "dark"
   },
   "keywords": [
-    "dependencies",
-    "packages",
-    "dependency analysis",
     "project intelligence",
+    "technology stack",
+    "dependencies",
+    "capabilities",
+    "dependency analysis",
     "package.json",
     "pyproject",
     "npm",
