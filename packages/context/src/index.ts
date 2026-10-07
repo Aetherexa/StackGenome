@@ -21,15 +21,19 @@ const packageCapabilities = (packageId: string): string[] =>
   TECHNOLOGY_CATALOG.find((entry) => entry.packageId === packageId)
     ?.capabilities ?? [];
 
-const buildPackage = (pkg: EcosystemPackage): AIContextPackage => ({
-  id: pkg.id,
-  name: pkg.name,
-  ecosystem: pkg.ecosystem,
-  ...(installedVersion(pkg) ? { version: installedVersion(pkg) } : {}),
-  ...(pkg.purpose ? { purpose: pkg.purpose } : {}),
-  capabilities: packageCapabilities(pkg.id),
-  health: pkg.health,
-});
+const buildPackage = (pkg: EcosystemPackage): AIContextPackage => {
+  const version = installedVersion(pkg);
+
+  return {
+    id: pkg.id,
+    name: pkg.name,
+    ecosystem: pkg.ecosystem,
+    ...(version ? { version } : {}),
+    ...(pkg.purpose ? { purpose: pkg.purpose } : {}),
+    capabilities: packageCapabilities(pkg.id),
+    health: pkg.health,
+  };
+};
 
 const relevantDirectPackages = (
   ecosystem: ProjectEcosystem,
