@@ -170,6 +170,17 @@ const packageFinding = (
         finding.severity === "warning"),
   );
 
+const displayRoot = (rootUri: string): string => {
+  try {
+    const value = decodeURIComponent(rootUri);
+    const normalized = value.replace(/^file:\/\//, "").replaceAll("\\", "/");
+    const parts = normalized.split("/").filter(Boolean);
+    return parts.slice(-2).join("/") || rootUri;
+  } catch {
+    return rootUri;
+  }
+};
+
 const groupTechnologies = (
   technologies: Technology[],
 ): Map<string, Technology[]> => {
@@ -287,6 +298,13 @@ const RecommendationView = ({
           ))}
         </div>
         <p style={styles.muted}>{recommendation.explanation}</p>
+        {recommendation.matchedCapabilities.length === 0 ? (
+          <p style={styles.muted}>
+            StackGenome V1 reasons from dependency and ecosystem metadata. It does
+            not inspect source-code implementation patterns; those queries may not
+            map to a package capability.
+          </p>
+        ) : null}
       </div>
 
       <div style={{ ...styles.card, marginBottom: 12 }}>
@@ -454,6 +472,12 @@ const App = ({
   const errorCount = data.findings.filter(
     (item) => item.severity === "error",
   ).length;
+  const infoCount = data.findings.filter(
+    (item) => item.severity === "info",
+  ).length;
+  const analysisStatus =
+    data.analysis?.status ??
+    (data.analyzers.length === 0 ? "unsupported" : "success");
   const directCount = data.packages.filter((pkg) => pkg.direct).length;
   const transitiveCount = data.packages.length - directCount;
 
@@ -497,29 +521,87 @@ const App = ({
           </div>
         </div>
         <div style={styles.muted}>
-          {data.analyzers.length} ecosystem
-          {data.analyzers.length === 1 ? "" : "s"} · Schema{" "}
-          {data.schemaVersion}
+          {data.analyzers.length > 0
+            ? `${data.analyzers.join(" + ")} ecosystem${data.analyzers.length === 1 ? "" : "s"}`
+            : "No ecosystem detected"}
         </div>
       </header>
 
+      {analysisStatus !== "success" ? (
+        <div
+          style={{
+            ...styles.card,
+            marginBottom: 18,
+            border:
+              analysisStatus === "failed"
+                ? "1px solid var(--vscode-inputValidation-errorBorder)"
+                : "1px solid var(--vscode-inputValidation-warningBorder)",
+          }}
+        >
+          <strong>
+            {analysisStatus === "unsupported"
+              ? "No supported project ecosystem detected"
+              : analysisStatus === "failed"
+                ? "StackGenome could not analyze this project"
+                : "StackGenome completed with partial results"}
+          </strong>
+          <p style={styles.muted}>
+            Analyzed root: {displayRoot(data.analysis?.rootUri ?? data.project.rootUri)}
+          </p>
+          {analysisStatus === "unsupported" ? (
+            <p>
+              StackGenome V1 looks for Node/TypeScript or Python project metadata
+              such as package.json, tsconfig.json, pyproject.toml, requirements.txt,
+              or Pipfile. Open a file inside the intended nested project and run
+              “StackGenome: Analyze Project” again.
+            </p>
+          ) : null}
+          {(data.analysis?.diagnostics ?? []).map((diagnostic) => (
+            <p key={`${diagnostic.code}:${diagnostic.analyzerId ?? ""}`}>
+              {diagnostic.severity === "error" ? "⛔" : "⚠"} {diagnostic.message}
+            </p>
+          ))}
+        </div>
+      ) : null}
+
       <section style={styles.stats}>
-        <div style={styles.card}>
+        <button
+          type="button"
+          onClick={() => setTab("Packages")}
+          style={{ ...styles.card, color: "inherit", textAlign: "left", cursor: "pointer" }}
+        >
           <strong>{directCount}</strong>
           <div style={styles.muted}>Direct packages</div>
-        </div>
-        <div style={styles.card}>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setDirectOnly(false);
+            setTab("Packages");
+          }}
+          style={{ ...styles.card, color: "inherit", textAlign: "left", cursor: "pointer" }}
+        >
           <strong>{transitiveCount}</strong>
           <div style={styles.muted}>Transitive packages</div>
-        </div>
-        <div style={styles.card}>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("Capabilities")}
+          style={{ ...styles.card, color: "inherit", textAlign: "left", cursor: "pointer" }}
+        >
           <strong>{data.capabilities.length}</strong>
           <div style={styles.muted}>Capabilities</div>
-        </div>
-        <div style={styles.card}>
-          <strong>{warningCount + errorCount}</strong>
-          <div style={styles.muted}>Health findings</div>
-        </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("Health")}
+          style={{ ...styles.card, color: "inherit", textAlign: "left", cursor: "pointer" }}
+        >
+          <strong>{warningCount + errorCount + infoCount}</strong>
+          <div style={styles.muted}>
+            {errorCount} errors · {warningCount} warnings · {infoCount} info
+          </div>
+        </button>
       </section>
 
       <nav style={styles.tabBar}>
@@ -547,6 +629,24 @@ const App = ({
 
       {tab === "Overview" && (
         <section>
+          {analysisStatus === "success" && (
+            <div style={{ ...styles.card, marginBottom: 10 }}>
+              <strong>Project profile</strong>
+              <p style={styles.muted}>
+                Root: {displayRoot(data.analysis?.rootUri ?? data.project.rootUri)}
+              </p>
+              <p>
+                {data.capabilities.length > 0
+                  ? `StackGenome found ${data.capabilities.length} reusable project capabilities across ${directCount} direct dependencies.`
+                  : "No curated capabilities were detected in the current direct dependencies."}
+              </p>
+            </div>
+          )}
+          {technologyGroups.size === 0 && analysisStatus === "success" ? (
+            <div style={styles.card}>
+              No technology metadata was detected for this project.
+            </div>
+          ) : null}
           {[...technologyGroups.entries()].map(
             ([group, technologies]) => (
               <div
@@ -607,6 +707,12 @@ const App = ({
               Direct only
             </label>
           </div>
+          {filteredPackages.length === 0 ? (
+            <div style={styles.card}>
+              No packages match the current filters. If this project has no package
+              manifest, StackGenome can still report detected language/tooling metadata.
+            </div>
+          ) : (
           <table style={styles.table}>
             <thead>
               <tr>
@@ -653,6 +759,7 @@ const App = ({
               })}
             </tbody>
           </table>
+          )}
         </section>
       )}
 
@@ -686,6 +793,13 @@ const App = ({
 
       {tab === "Capabilities" && (
         <section>
+          {data.capabilities.length === 0 ? (
+            <div style={styles.card}>
+              No curated package capabilities were detected. This does not mean the
+              project has no functionality; StackGenome V1 only reports capabilities
+              it can support from deterministic ecosystem metadata.
+            </div>
+          ) : null}
           {data.capabilities.map((capability) => (
             <div
               key={capability.id}

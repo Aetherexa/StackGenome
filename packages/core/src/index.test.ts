@@ -131,3 +131,55 @@ describe("ProjectEcosystemEngine", () => {
     ]);
   });
 });
+
+
+describe("ProjectEcosystemEngine resilience", () => {
+  it("returns unsupported instead of a silent empty success", async () => {
+    const engine = new ProjectEcosystemEngine(new AnalyzerRegistry());
+    const result = await engine.analyze(context);
+
+    expect(result.analysis?.status).toBe("unsupported");
+    expect(result.analyzers).toEqual([]);
+  });
+
+  it("preserves successful analyzer results when another analyzer fails", async () => {
+    const healthy: EcosystemAnalyzer = {
+      id: "healthy",
+      displayName: "Healthy",
+      detect: async () => true,
+      analyze: async () => ({
+        technologies: [
+          {
+            id: "language:typescript",
+            name: "TypeScript",
+            kind: "language",
+            source: "tsconfig.json",
+          },
+        ],
+      }),
+    };
+    const broken: EcosystemAnalyzer = {
+      id: "broken",
+      displayName: "Broken",
+      detect: async () => true,
+      analyze: async () => {
+        throw new Error("bad lockfile");
+      },
+    };
+
+    const result = await new ProjectEcosystemEngine(
+      new AnalyzerRegistry().register(healthy).register(broken),
+    ).analyze(context);
+
+    expect(result.analysis?.status).toBe("partial");
+    expect(result.technologies).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "language:typescript" }),
+    ]));
+    expect(result.analysis?.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "analyzer-analysis-failed",
+        analyzerId: "broken",
+      }),
+    ]));
+  });
+});

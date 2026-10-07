@@ -15,6 +15,11 @@ import {
 import { AnalyzerRegistry, ProjectEcosystemEngine } from "@stackgenome/core";
 import { ProjectIntelligenceService } from "@stackgenome/service";
 import * as vscode from "vscode";
+import { posix } from "node:path";
+import {
+  selectProjectCandidate,
+  type ProjectCandidate,
+} from "./projectDiscovery.js";
 
 type AIContextProfiles = Record<AIContextProfile, ProjectAIContext>;
 
@@ -25,9 +30,20 @@ const AI_CONTEXT_PROFILES: AIContextProfile[] = [
 ];
 
 const INTELLIGENCE_PATTERNS = [
-  "**/{package.json,package-lock.json,pnpm-lock.yaml,yarn.lock,pyproject.toml,poetry.lock,uv.lock,Pipfile,Pipfile.lock}",
+  "**/{package.json,package-lock.json,pnpm-lock.yaml,yarn.lock,pyproject.toml,poetry.lock,uv.lock,Pipfile,Pipfile.lock,tsconfig.json}",
   "**/requirements*.txt",
 ];
+
+const PROJECT_MARKERS = [
+  "package.json",
+  "pyproject.toml",
+  "Pipfile",
+  "requirements.txt",
+  "tsconfig.json",
+] as const;
+
+const PROJECT_SEARCH_EXCLUDE =
+  "**/{node_modules,.git,dist,build,out,coverage,.next,.turbo,bin,obj}/**";
 
 const isAIContextProfile = (value: unknown): value is AIContextProfile =>
   typeof value === "string" &&
@@ -58,13 +74,77 @@ class VsCodeWorkspaceReader implements WorkspaceReader {
   }
 }
 
-const analyzeWorkspaceUncached = async (): Promise<ProjectEcosystem> => {
-  const folder = vscode.workspace.workspaceFolders?.[0];
-  if (!folder) {
+const discoverProjectCandidates = async (): Promise<
+  Array<ProjectCandidate & { uri: vscode.Uri }>
+> => {
+  const folders = vscode.workspace.workspaceFolders ?? [];
+  const candidates = new Map<
+    string,
+    ProjectCandidate & { uri: vscode.Uri }
+  >();
+
+  for (const folder of folders) {
+    for (const marker of PROJECT_MARKERS) {
+      const files = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(folder, `**/${marker}`),
+        PROJECT_SEARCH_EXCLUDE,
+        200,
+      );
+
+      for (const file of files) {
+        const rootPath = posix.dirname(file.path);
+        const key = `${folder.uri.toString()}::${rootPath}`;
+        const existing = candidates.get(key);
+        if (existing) {
+          if (!existing.markers.includes(marker)) {
+            existing.markers.push(marker);
+          }
+          continue;
+        }
+
+        candidates.set(key, {
+          rootPath,
+          workspaceRootPath: folder.uri.path,
+          markers: [marker],
+          uri: file.with({ path: rootPath }),
+        });
+      }
+    }
+  }
+
+  return [...candidates.values()];
+};
+
+const resolveProjectRoot = async (): Promise<{
+  uri: vscode.Uri;
+  name: string;
+}> => {
+  const folders = vscode.workspace.workspaceFolders ?? [];
+  if (folders.length === 0) {
     throw new Error(
       "Open a workspace folder before running StackGenome.",
     );
   }
+
+  const candidates = await discoverProjectCandidates();
+  const activePath = vscode.window.activeTextEditor?.document.uri.path;
+  const selected = selectProjectCandidate(candidates, activePath);
+
+  if (selected) {
+    return {
+      uri: selected.uri,
+      name: posix.basename(selected.rootPath) || folders[0]?.name || "project",
+    };
+  }
+
+  return {
+    uri: folders[0]!.uri,
+    name: folders[0]!.name,
+  };
+};
+
+const analyzeWorkspaceUncached = async (): Promise<ProjectEcosystem> => {
+  const root = await resolveProjectRoot();
 
   const registry = new AnalyzerRegistry()
     .register(new NodeEcosystemAnalyzer())
@@ -73,10 +153,10 @@ const analyzeWorkspaceUncached = async (): Promise<ProjectEcosystem> => {
 
   return engine.analyze({
     project: {
-      name: folder.name,
-      rootUri: folder.uri.toString(),
+      name: root.name,
+      rootUri: root.uri.toString(),
     },
-    reader: new VsCodeWorkspaceReader(folder.uri),
+    reader: new VsCodeWorkspaceReader(root.uri),
   });
 };
 

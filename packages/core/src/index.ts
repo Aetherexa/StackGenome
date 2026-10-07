@@ -1,5 +1,6 @@
 import {
   PROJECT_ECOSYSTEM_SCHEMA_VERSION,
+  type AnalysisDiagnostic,
   type AnalyzerContext,
   type Capability,
   type EcosystemAnalyzer,
@@ -91,14 +92,60 @@ const mergeProjectIdentity = (
   };
 };
 
+const diagnosticMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 export class ProjectEcosystemEngine {
   constructor(private readonly registry: AnalyzerRegistry) {}
 
   async analyze(context: AnalyzerContext): Promise<ProjectEcosystem> {
-    const analyzers = await this.registry.matching(context);
-    const fragments = await Promise.all(
-      analyzers.map((analyzer) => analyzer.analyze(context)),
+    const diagnostics: AnalysisDiagnostic[] = [];
+
+    const detection = await Promise.all(
+      this.registry.list().map(async (analyzer) => {
+        try {
+          return {
+            analyzer,
+            matches: await analyzer.detect(context),
+          };
+        } catch (error) {
+          diagnostics.push({
+            code: "analyzer-detection-failed",
+            severity: "error",
+            analyzerId: analyzer.id,
+            message: `${analyzer.displayName} detection failed: ${diagnosticMessage(error)}`,
+          });
+          return { analyzer, matches: false };
+        }
+      }),
     );
+
+    const analyzers = detection
+      .filter((result) => result.matches)
+      .map((result) => result.analyzer);
+
+    const analyzed = await Promise.all(
+      analyzers.map(async (analyzer) => {
+        try {
+          return {
+            analyzer,
+            fragment: await analyzer.analyze(context),
+          };
+        } catch (error) {
+          diagnostics.push({
+            code: "analyzer-analysis-failed",
+            severity: "error",
+            analyzerId: analyzer.id,
+            message: `${analyzer.displayName} analysis failed: ${diagnosticMessage(error)}`,
+          });
+          return { analyzer, fragment: undefined };
+        }
+      }),
+    );
+
+    const fragments = analyzed
+      .map((result) => result.fragment)
+      .filter((fragment): fragment is Partial<ProjectEcosystem> => Boolean(fragment));
 
     const technologies = fragments.flatMap(
       (fragment) => fragment.technologies ?? [],
@@ -113,6 +160,21 @@ export class ProjectEcosystemEngine {
       (fragment) => fragment.findings ?? [],
     ) as EcosystemFinding[];
 
+    const analysisFailures = diagnostics.filter(
+      (diagnostic) => diagnostic.severity === "error",
+    ).length;
+
+    const status =
+      analyzers.length === 0
+        ? diagnostics.length > 0
+          ? "failed"
+          : "unsupported"
+        : fragments.length === 0
+          ? "failed"
+          : analysisFailures > 0
+            ? "partial"
+            : "success";
+
     return {
       schemaVersion: PROJECT_ECOSYSTEM_SCHEMA_VERSION,
       generatedAt: new Date().toISOString(),
@@ -122,6 +184,11 @@ export class ProjectEcosystemEngine {
       capabilities: mergeCapabilities(capabilities),
       findings: dedupeById(findings),
       analyzers: analyzers.map((analyzer) => analyzer.id),
+      analysis: {
+        status,
+        rootUri: context.project.rootUri,
+        diagnostics,
+      },
     };
   }
 }
