@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "pnpm build:packages && pnpm --filter @stackgenome/vscode-extension build",
-    "build:packages": "tsc -b packages/contracts packages/knowledge packages/core packages/analyzer-node packages/analyzer-python packages/advisor",
+    "build:packages": "tsc -b packages/contracts packages/knowledge packages/core packages/analyzer-node packages/analyzer-python packages/advisor packages/context",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "lint": "biome lint .",
