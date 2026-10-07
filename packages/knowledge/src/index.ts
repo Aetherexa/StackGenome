@@ -436,6 +436,7 @@ export const NODE_PACKAGE_KNOWLEDGE: Record<string, PackageKnowledgeEntry> = {
     capabilities: ["internationalization"],
     primaryCapabilities: ["internationalization"],
     aliases: ["i18n", "localization", "translations"],
+    preferredLanguages: ["javascript", "typescript"],
     guidance: {
       preferredPatterns: [
         "Reuse a shared i18next instance and central translation resources.",
