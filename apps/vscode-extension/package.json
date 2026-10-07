@@ -1,19 +1,53 @@
 {
   "name": "stackgenome",
   "displayName": "StackGenome",
-  "description": "Project ecosystem intelligence for developers and AI assistants.",
-  "version": "0.1.0",
-  "private": true,
+  "description": "Understand your project's dependencies, versions, capabilities, and compatibility before adding something new.",
+  "version": "1.0.0",
   "type": "module",
   "publisher": "aetherexa",
-  "engines": { "vscode": "^1.100.0" },
-  "categories": ["Other"],
+  "license": "MIT",
+  "pricing": "Free",
+  "icon": "assets/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aetherexa/StackGenome.git"
+  },
+  "homepage": "https://github.com/Aetherexa/StackGenome#readme",
+  "bugs": {
+    "url": "https://github.com/Aetherexa/StackGenome/issues"
+  },
+  "galleryBanner": {
+    "color": "#0E1220",
+    "theme": "dark"
+  },
+  "keywords": [
+    "dependencies",
+    "packages",
+    "dependency analysis",
+    "project intelligence",
+    "package.json",
+    "pyproject",
+    "npm",
+    "pnpm",
+    "yarn",
+    "python",
+    "compatibility",
+    "developer tools"
+  ],
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
   "activationEvents": [
     "onCommand:stackgenome.analyzeProject",
     "onCommand:stackgenome.openReport",
     "onCommand:stackgenome.findExistingCapability",
-    "onCommand:stackgenome.recommendTechnology",
-    "onCommand:stackgenome.generateAIContext"
+    "onCommand:stackgenome.recommendTechnology"
   ],
   "main": "./dist/extension.cjs",
   "contributes": {
@@ -33,18 +67,18 @@
       {
         "command": "stackgenome.recommendTechnology",
         "title": "StackGenome: Recommend Technology"
-      },
-      {
-        "command": "stackgenome.generateAIContext",
-        "title": "StackGenome: Generate AI Context"
       }
     ]
   },
   "scripts": {
     "build": "node ./build.mjs",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "vscode:prepublish": "pnpm run build",
+    "prepare:vsix": "node -e \"require('fs').mkdirSync('../../artifacts',{recursive:true})\"",
+    "package:vsix": "pnpm run prepare:vsix && vsce package --no-dependencies --out ../../artifacts/stackgenome-1.0.0.vsix",
+    "publish:marketplace": "vsce publish --no-dependencies"
   },
-  "dependencies": {
+  "devDependencies": {
     "@stackgenome/advisor": "workspace:*",
     "@stackgenome/analyzer-node": "workspace:*",
     "@stackgenome/analyzer-python": "workspace:*",
@@ -52,15 +86,14 @@
     "@stackgenome/contracts": "workspace:*",
     "@stackgenome/core": "workspace:*",
     "@stackgenome/service": "workspace:*",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
-  },
-  "devDependencies": {
     "@types/node": "^22.18.0",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^4.0.0",
     "esbuild": "^0.25.9",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "typescript": "^5.9.3"
   }
 }
