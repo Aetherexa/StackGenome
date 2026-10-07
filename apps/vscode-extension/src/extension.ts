@@ -218,21 +218,22 @@ const handleWebviewMessage = async (
   if (typeof message !== "object" || message === null) return;
 
   const action = Reflect.get(message, "action");
-  const profile = Reflect.get(message, "profile");
-  if (!isAIContextProfile(profile)) return;
 
-  const selected = contexts[profile];
-  const serialized = contextGenerator.serialize(selected);
+  if (action === "copyAIContext" || action === "exportAIContext") {
+    const profile = Reflect.get(message, "profile");
+    if (!isAIContextProfile(profile)) return;
 
-  if (action === "copyAIContext") {
-    await vscode.env.clipboard.writeText(serialized);
-    await vscode.window.showInformationMessage(
-      `StackGenome ${profile} AI context copied to clipboard.`,
-    );
-    return;
-  }
+    const selected = contexts[profile];
+    const serialized = contextGenerator.serialize(selected);
 
-  if (action === "exportAIContext") {
+    if (action === "copyAIContext") {
+      await vscode.env.clipboard.writeText(serialized);
+      await vscode.window.showInformationMessage(
+        `StackGenome ${profile} AI context copied to clipboard.`,
+      );
+      return;
+    }
+
     const folder = vscode.workspace.workspaceFolders?.[0];
     const defaultUri = folder
       ? vscode.Uri.joinPath(
@@ -261,6 +262,7 @@ const handleWebviewMessage = async (
 
 const openReport = (
   context: vscode.ExtensionContext,
+  service: ProjectIntelligenceService,
   analysis: ProjectEcosystem,
   recommendation?: AdvisorResult,
   initialTab = "Overview",
@@ -269,24 +271,47 @@ const openReport = (
   const contexts = contextGenerator.generateAll(analysis);
   const panel = vscode.window.createWebviewPanel(
     "stackgenome.report",
-    "StackGenome — Ecosystem Report",
+    "StackGenome — Project Intelligence",
     vscode.ViewColumn.One,
     { enableScripts: true, retainContextWhenHidden: true },
   );
 
-  panel.webview.html = getWebviewHtml(
-    panel.webview,
-    context.extensionUri,
-    analysis,
-    contexts,
-    recommendation,
-    initialTab,
-    initialContextProfile,
-  );
+  const render = (
+    nextRecommendation: AdvisorResult | undefined,
+    nextTab = "Overview",
+  ): void => {
+    panel.webview.html = getWebviewHtml(
+      panel.webview,
+      context.extensionUri,
+      analysis,
+      contexts,
+      nextRecommendation,
+      nextTab,
+      initialContextProfile,
+    );
+  };
+
+  render(recommendation, initialTab);
 
   panel.webview.onDidReceiveMessage(
     async (message) => {
       try {
+        if (
+          typeof message === "object" &&
+          message !== null &&
+          Reflect.get(message, "action") === "findCapability"
+        ) {
+          const intent = Reflect.get(message, "intent");
+          if (typeof intent !== "string" || !intent.trim()) return;
+
+          latestRecommendation = await service.recommend(
+            intent.trim(),
+            "existing-first",
+          );
+          render(latestRecommendation, "Overview");
+          return;
+        }
+
         await handleWebviewMessage(message, contexts);
       } catch (error) {
         await vscode.window.showErrorMessage(
@@ -322,9 +347,10 @@ const runAdvisor = async (
 
   openReport(
     context,
+    service,
     analysis,
     latestRecommendation,
-    "Recommend",
+    "Overview",
   );
 };
 
@@ -361,9 +387,10 @@ const generateAIContext = async (
   const analysis = await service.getProjectEcosystem();
   openReport(
     context,
+    service,
     analysis,
     latestRecommendation,
-    "AI Context",
+    "Overview",
     selection.profile,
   );
 };
@@ -429,7 +456,7 @@ export const activate = (
             async () => {
               const analysis = await service.refresh();
               latestRecommendation = undefined;
-              openReport(context, analysis);
+              openReport(context, service, analysis);
             },
           );
         } catch (error) {
@@ -446,9 +473,10 @@ export const activate = (
           const analysis = await service.getProjectEcosystem();
           openReport(
             context,
+            service,
             analysis,
             latestRecommendation,
-            latestRecommendation ? "Recommend" : "Overview",
+            "Overview",
           );
         } catch (error) {
           await vscode.window.showErrorMessage(

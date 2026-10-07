@@ -1,8 +1,8 @@
 # StackGenome
 
-> **Know what your project already has.**
+> **Know your stack before you change your stack.**
 
-StackGenome is a standalone VS Code extension that turns dependency manifests and lockfiles into a clear picture of your project's technology ecosystem.
+StackGenome is a standalone VS Code extension for **project technology intelligence**. It turns manifests, lockfiles, and project configuration into a clear picture of what your project is built with, what capabilities already exist, and what you should reuse before adding more technology.
 
 Before adding another package, StackGenome helps you answer:
 
@@ -23,8 +23,8 @@ StackGenome gives you an **existing-first view of the project ecosystem** so you
 
 ## V1 features
 
-### Ecosystem overview
-See detected languages, frameworks, runtimes, package managers, build tools, testing tools, and other project technologies.
+### Project DNA
+See the project's languages, frameworks, runtimes, package managers, build systems, testing tools, and other detected technologies at a glance.
 
 ### Dependency intelligence
 Inspect direct and transitive packages with declared and resolved versions.
@@ -49,7 +49,8 @@ Use **StackGenome: Find Capability** to describe what you want to implement. Sta
 1. Open a project folder in VS Code.
 2. Open the Command Palette.
 3. Run **StackGenome: Analyze Project**.
-4. Explore **Overview**, **Packages**, **Health**, **Capabilities**, and **Find Capability**.
+4. Explore **Overview**, **Technology**, **Capabilities**, **Dependencies**, and **Health**.
+5. Use the **Technology decision** box on Overview to check what the project already provides before adding a dependency.
 
 Useful commands:
 

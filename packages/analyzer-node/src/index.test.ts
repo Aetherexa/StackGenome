@@ -224,3 +224,60 @@ packages:
       }),
     ]));
   });
+
+
+  it("treats duplicate resolved versions as informational observations", async () => {
+    const analyzer = new NodeEcosystemAnalyzer();
+    const context: AnalyzerContext = {
+      project: { name: "workspace", rootUri: "file:///workspace" },
+      reader: reader({
+        "package.json": JSON.stringify({
+          dependencies: { react: "^19.0.0" },
+        }),
+        "package-lock.json": JSON.stringify({
+          packages: {
+            "node_modules/react": { version: "19.1.1" },
+            "node_modules/a/node_modules/react": { version: "18.3.1" },
+          },
+        }),
+      }),
+    };
+
+    const result = await analyzer.analyze(context);
+    expect(result.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "duplicate-resolved-versions",
+        severity: "info",
+      }),
+    ]));
+  });
+
+  it("treats peer issues from transitive packages as informational", async () => {
+    const analyzer = new NodeEcosystemAnalyzer();
+    const context: AnalyzerContext = {
+      project: { name: "workspace", rootUri: "file:///workspace" },
+      reader: reader({
+        "package.json": JSON.stringify({
+          dependencies: { react: "^19.0.0" },
+        }),
+        "package-lock.json": JSON.stringify({
+          packages: {
+            "node_modules/react": { version: "19.1.1" },
+            "node_modules/transitive-widget": {
+              version: "1.0.0",
+              peerDependencies: { vue: "^3.0.0" },
+            },
+          },
+        }),
+      }),
+    };
+
+    const result = await analyzer.analyze(context);
+    expect(result.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "peer-dependency-missing",
+        packageName: "transitive-widget",
+        severity: "info",
+      }),
+    ]));
+  });

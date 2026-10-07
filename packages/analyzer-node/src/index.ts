@@ -205,12 +205,13 @@ const duplicateFindings = (
     .map(([name, resolved]) => ({
       id: `duplicate:${name}`,
       code: "duplicate-resolved-versions",
-      severity: "warning" as const,
+      severity: "info" as const,
       title: "Multiple resolved versions",
       message: `${name} resolves to ${[...resolved].sort().join(", ")}.`,
       packageName: name,
       packageId: `npm:${name}`,
-      recommendation: "Review dependency constraints and deduplicate where the ecosystem permits.",
+      recommendation:
+        "Multiple versions can be normal. Review only if bundle size, compatibility, or deduplication is a concern.",
     }));
 
 const deprecatedFindings = (
@@ -258,6 +259,7 @@ const unresolvedFindings = (
 
 const peerFindings = (
   resolvedPackages: ResolvedPackage[],
+  directNames: Set<string>,
 ): EcosystemFinding[] => {
   const versions = groupResolvedVersions(resolvedPackages);
   const findings: EcosystemFinding[] = [];
@@ -274,15 +276,20 @@ const peerFindings = (
         const id = `peer-missing:${pkg.name}:${peerName}`;
         if (emitted.has(id)) continue;
         emitted.add(id);
+        const direct = directNames.has(pkg.name);
         findings.push({
           id,
           code: "peer-dependency-missing",
-          severity: "warning",
-          title: "Peer dependency missing",
+          severity: direct ? "warning" : "info",
+          title: direct
+            ? "Peer dependency missing"
+            : "Transitive peer dependency observation",
           message: `${findingBase}, but ${peerName} is not resolved.`,
           packageName: pkg.name,
           packageId: `npm:${pkg.name}`,
-          recommendation: `Install a compatible ${peerName} version or use a compatible ${pkg.name} release.`,
+          recommendation: direct
+            ? `Install a compatible ${peerName} version or use a compatible ${pkg.name} release.`
+            : "This requirement originates from a transitive package. Review it only if the dependency path affects runtime or build behavior.",
         });
         continue;
       }
@@ -292,15 +299,20 @@ const peerFindings = (
         const id = `peer-mismatch:${pkg.name}:${peerName}`;
         if (emitted.has(id)) continue;
         emitted.add(id);
+        const direct = directNames.has(pkg.name);
         findings.push({
           id,
           code: "peer-dependency-mismatch",
-          severity: "warning",
-          title: "Peer dependency mismatch",
+          severity: direct ? "warning" : "info",
+          title: direct
+            ? "Peer dependency mismatch"
+            : "Transitive peer compatibility observation",
           message: `${findingBase}, but resolved versions are ${peerVersions.join(", ")}.`,
           packageName: pkg.name,
           packageId: `npm:${pkg.name}`,
-          recommendation: "Align the peer dependency versions before relying on this package combination.",
+          recommendation: direct
+            ? "Align the peer dependency versions before relying on this package combination."
+            : "This mismatch belongs to a transitive package. Treat it as informational unless the dependency path causes runtime or build issues.",
         });
       }
     }
@@ -463,7 +475,7 @@ export class NodeEcosystemAnalyzer implements EcosystemAnalyzer {
       ...duplicateFindings(versions),
       ...deprecatedFindings(resolvedPackages),
       ...unresolvedFindings(directPackages, Boolean(lockfile)),
-      ...peerFindings(resolvedPackages),
+      ...peerFindings(resolvedPackages, directNames),
     ];
 
     const allPackages = [...directPackages, ...transitivePackages].map((pkg) => ({

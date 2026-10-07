@@ -1,8 +1,8 @@
 # StackGenome
 
-> **Know what your project already has.**
+> **Know your stack before you change your stack.**
 
-StackGenome is a project ecosystem intelligence engine and standalone VS Code extension. It analyzes dependency manifests and lockfiles to explain the technologies, versions, capabilities, and dependency-health signals already present in a project.
+StackGenome is a project technology intelligence engine and standalone VS Code extension. It analyzes dependency manifests and lockfiles to explain the technologies, versions, capabilities, and dependency-health signals already present in a project.
 
 ## V1
 
