@@ -5,7 +5,6 @@ import { ProjectAIContextGenerator } from "@stackgenome/context";
 import {
   STACKGENOME_EXTENSION_API_VERSION,
   type AIContextProfile,
-  type AdvisorMode,
   type AdvisorResult,
   type ProjectAIContext,
   type ProjectEcosystem,
@@ -303,16 +302,13 @@ const openReport = (
 const runAdvisor = async (
   context: vscode.ExtensionContext,
   service: ProjectIntelligenceService,
-  mode: AdvisorMode,
 ): Promise<void> => {
   const intent = await vscode.window.showInputBox({
-    title:
-      mode === "existing-only"
-        ? "StackGenome: Find Existing Capability"
-        : "StackGenome: Recommend Technology",
-    prompt: "What are you trying to implement?",
+    title: "StackGenome: Find Capability",
+    prompt:
+      "What are you trying to implement? StackGenome checks installed capabilities first.",
     placeHolder:
-      "e.g. Add runtime API validation or add server-state caching",
+      "e.g. internationalization, logging, API validation, HTTP client, authentication",
     ignoreFocusOut: true,
   });
 
@@ -320,7 +316,7 @@ const runAdvisor = async (
 
   latestRecommendation = await service.recommend(
     intent.trim(),
-    mode,
+    "existing-first",
   );
   const analysis = await service.getProjectEcosystem();
 
@@ -462,22 +458,10 @@ export const activate = (
       },
     ),
     vscode.commands.registerCommand(
-      "stackgenome.findExistingCapability",
+      "stackgenome.findCapability",
       async () => {
         try {
-          await runAdvisor(context, service, "existing-only");
-        } catch (error) {
-          await vscode.window.showErrorMessage(
-            error instanceof Error ? error.message : String(error),
-          );
-        }
-      },
-    ),
-    vscode.commands.registerCommand(
-      "stackgenome.recommendTechnology",
-      async () => {
-        try {
-          await runAdvisor(context, service, "existing-first");
+          await runAdvisor(context, service);
         } catch (error) {
           await vscode.window.showErrorMessage(
             error instanceof Error ? error.message : String(error),

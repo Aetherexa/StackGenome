@@ -19,8 +19,9 @@ All notable changes to StackGenome are documented here.
 
 ### Capability intelligence
 - Package purpose and capability classification.
-- Existing-capability discovery.
-- Existing-first technology recommendations with implementation guidance.
+- Unified **Find Capability** workflow with existing-first dependency decisions.
+- Broader V1 intent intelligence including internationalization, logging, date/time handling, serialization, and feature flags.
+- Ecosystem-aware technology recommendations with implementation guidance.
 
 ### VS Code experience
 - Ecosystem overview.

@@ -276,10 +276,12 @@ const RecommendationView = ({
       <div style={styles.card}>
         <strong>Existing capabilities first</strong>
         <p style={styles.muted}>
-          Run “StackGenome: Find Existing Capability” or
-          “StackGenome: Recommend Technology” from the Command Palette.
-          StackGenome will prefer libraries already present in this project
-          before proposing another dependency.
+          Run “StackGenome: Find Capability” from the Command Palette.
+          StackGenome checks installed project capabilities first and only
+          recommends a new dependency when no suitable existing option is found.
+
+          Try: internationalization · logging · validation · HTTP client ·
+          authentication · forms · state management · database · testing
         </p>
       </div>
     );
@@ -313,8 +315,8 @@ const RecommendationView = ({
           {recommendation.newDependencyRequired === false
             ? "✓ No new dependency required"
             : recommendation.newDependencyRequired === true
-              ? "＋ New dependency required"
-              : "No package decision available"}
+              ? "＋ New dependency recommended"
+              : "No dependency recommendation available"}
         </p>
       </div>
 

@@ -41,22 +41,21 @@ Surface actionable findings such as:
 ### Capability map
 Understand what installed packages already provide: validation, HTTP clients, forms, authentication, state management, testing, database access, and more.
 
-### Existing-first recommendations
-Use **StackGenome: Find Existing Capability** or **StackGenome: Recommend Technology** to check whether the project already has a suitable library before introducing another dependency.
+### Existing-first capability advisor
+Use **StackGenome: Find Capability** to describe what you want to implement. StackGenome first checks whether the project already has a suitable dependency. Only when no suitable installed capability exists does it recommend an ecosystem-compatible package.
 
 ## Quick start
 
 1. Open a project folder in VS Code.
 2. Open the Command Palette.
 3. Run **StackGenome: Analyze Project**.
-4. Explore **Overview**, **Packages**, **Health**, **Capabilities**, and **Recommend**.
+4. Explore **Overview**, **Packages**, **Health**, **Capabilities**, and **Find Capability**.
 
 Useful commands:
 
 - **StackGenome: Analyze Project** — refresh and open the ecosystem report.
 - **StackGenome: Open Ecosystem Report** — reopen the current report.
-- **StackGenome: Find Existing Capability** — check whether an installed package can solve an implementation need.
-- **StackGenome: Recommend Technology** — get an ecosystem-aware recommendation when no suitable installed capability exists.
+- **StackGenome: Find Capability** — describe an implementation need and get an existing-first dependency decision.
 
 ## Supported ecosystems in V1
 
