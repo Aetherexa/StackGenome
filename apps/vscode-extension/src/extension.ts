@@ -211,7 +211,7 @@ const openReport = (
       }
     },
     undefined,
-    panel.disposables,
+    context.subscriptions,
   );
 };
 
