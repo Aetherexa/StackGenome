@@ -346,7 +346,7 @@ const detectTechnologies = (
       name: "JavaScript",
       kind: "language",
       ecosystem: "node",
-      source: hasTypeScriptConfig ? "tsconfig.json" : "package.json",
+      source: "package.json",
     });
   }
 
@@ -356,7 +356,7 @@ const detectTechnologies = (
       name: "TypeScript",
       kind: "language",
       ecosystem: "node",
-      source: "package.json",
+      source: hasTypeScriptConfig ? "tsconfig.json" : "package.json",
     });
   }
 

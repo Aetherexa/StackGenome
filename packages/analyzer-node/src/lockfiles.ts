@@ -238,6 +238,17 @@ const parseClassicYarnLock = (text: string): LockfileAnalysis => {
     }
   }
 
+  const meaningfulLines = lines.filter((line) => {
+    const trimmed = line.trim();
+    return Boolean(trimmed) && !trimmed.startsWith("#");
+  });
+
+  if (meaningfulLines.length > 0 && packages.length === 0) {
+    throw new Error(
+      "No recognizable Yarn classic package entries were found.",
+    );
+  }
+
   return {
     manager: "yarn",
     source: "yarn.lock",
