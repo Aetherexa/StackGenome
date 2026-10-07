@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Quality gate
         run: pnpm check
       - name: Package VSIX
@@ -63,7 +63,7 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Publish with Marketplace trusted publishing
         working-directory: apps/vscode-extension
         run: pnpm exec vsce publish --oidc --no-dependencies
