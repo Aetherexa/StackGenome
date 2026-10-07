@@ -18,7 +18,8 @@
       "@stackgenome/core": ["packages/core/src/index.ts"],
       "@stackgenome/analyzer-node": ["packages/analyzer-node/src/index.ts"],
       "@stackgenome/analyzer-python": ["packages/analyzer-python/src/index.ts"],
-      "@stackgenome/advisor": ["packages/advisor/src/index.ts"]
+      "@stackgenome/advisor": ["packages/advisor/src/index.ts"],
+      "@stackgenome/context": ["packages/context/src/index.ts"]
     }
   }
 }

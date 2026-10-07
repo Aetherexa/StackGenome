@@ -116,6 +116,70 @@ export interface AdvisorResult {
   explanation: string;
 }
 
+export const PROJECT_AI_CONTEXT_SCHEMA_VERSION = "1.0" as const;
+
+export type AIContextProfile = "compact" | "standard" | "detailed";
+
+export interface AIContextTechnology {
+  name: string;
+  kind: TechnologyKind;
+  ecosystem?: string;
+  version?: string;
+}
+
+export interface AIContextPackage {
+  id: string;
+  name: string;
+  ecosystem: string;
+  version?: string;
+  purpose?: string;
+  capabilities: string[];
+  health: PackageHealth;
+}
+
+export interface AIContextConstraint {
+  severity: FindingSeverity;
+  code: string;
+  message: string;
+  packageId?: string;
+  recommendation?: string;
+}
+
+export interface AIContextInstructions {
+  reuse: string[];
+  prefer: string[];
+  avoid: string[];
+}
+
+export interface AIContextStats {
+  characters: number;
+  bytes: number;
+  approximateTokens: number;
+}
+
+export interface ProjectAIContext {
+  schemaVersion: typeof PROJECT_AI_CONTEXT_SCHEMA_VERSION;
+  sourceSchemaVersion: string;
+  profile: AIContextProfile;
+  generatedAt: string;
+  project: {
+    name: string;
+    projectType?: string;
+    ecosystems: string[];
+  };
+  technologies: AIContextTechnology[];
+  capabilities: Array<{
+    id: string;
+    name: string;
+    providedBy: string[];
+  }>;
+  packages: AIContextPackage[];
+  constraints: AIContextConstraint[];
+  instructions: AIContextInstructions;
+  exclusions: string[];
+  stats: AIContextStats;
+}
+
 export interface WorkspaceReader {
   exists(relativePath: string): Promise<boolean>;
   readText(relativePath: string): Promise<string>;

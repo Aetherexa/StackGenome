@@ -12,7 +12,8 @@
     "onCommand:stackgenome.analyzeProject",
     "onCommand:stackgenome.openReport",
     "onCommand:stackgenome.findExistingCapability",
-    "onCommand:stackgenome.recommendTechnology"
+    "onCommand:stackgenome.recommendTechnology",
+    "onCommand:stackgenome.generateAIContext"
   ],
   "main": "./dist/extension.cjs",
   "contributes": {
@@ -32,6 +33,10 @@
       {
         "command": "stackgenome.recommendTechnology",
         "title": "StackGenome: Recommend Technology"
+      },
+      {
+        "command": "stackgenome.generateAIContext",
+        "title": "StackGenome: Generate AI Context"
       }
     ]
   },
@@ -43,6 +48,7 @@
     "@stackgenome/advisor": "workspace:*",
     "@stackgenome/analyzer-node": "workspace:*",
     "@stackgenome/analyzer-python": "workspace:*",
+    "@stackgenome/context": "workspace:*",
     "@stackgenome/contracts": "workspace:*",
     "@stackgenome/core": "workspace:*",
     "react": "^19.1.1",

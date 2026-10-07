@@ -1,21 +1,36 @@
 import React, { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type {
+  AIContextProfile,
   AdvisorResult,
   EcosystemFinding,
   EcosystemPackage,
+  ProjectAIContext,
   ProjectEcosystem,
   RecommendationCandidate,
   Technology,
 } from "@stackgenome/contracts";
 
+interface VsCodeApi {
+  postMessage(message: unknown): void;
+}
+
+declare function acquireVsCodeApi(): VsCodeApi;
+
 declare global {
   interface Window {
     __STACKGENOME_DATA__: ProjectEcosystem;
     __STACKGENOME_RECOMMENDATION__: AdvisorResult | null;
+    __STACKGENOME_AI_CONTEXTS__: Record<
+      AIContextProfile,
+      ProjectAIContext
+    >;
     __STACKGENOME_INITIAL_TAB__: string;
+    __STACKGENOME_INITIAL_CONTEXT_PROFILE__: AIContextProfile;
   }
 }
+
+const vscode = acquireVsCodeApi();
 
 type Tab =
   | "Overview"
@@ -32,6 +47,12 @@ const tabs: Tab[] = [
   "Capabilities",
   "Recommend",
   "AI Context",
+];
+
+const profiles: AIContextProfile[] = [
+  "compact",
+  "standard",
+  "detailed",
 ];
 
 const isTab = (value: string): value is Tab =>
@@ -103,6 +124,14 @@ const styles: Record<string, React.CSSProperties> = {
     background: "var(--vscode-input-background)",
     border: "1px solid var(--vscode-input-border)",
   },
+  button: {
+    padding: "7px 12px",
+    color: "var(--vscode-button-foreground)",
+    background: "var(--vscode-button-background)",
+    border: "none",
+    borderRadius: 4,
+    cursor: "pointer",
+  },
   recommendationHero: {
     border: "1px solid var(--vscode-focusBorder)",
     borderRadius: 10,
@@ -115,6 +144,18 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: 10,
     marginTop: 12,
+  },
+  code: {
+    whiteSpace: "pre-wrap",
+    overflowWrap: "anywhere",
+    maxHeight: 520,
+    overflow: "auto",
+    padding: 14,
+    border: "1px solid var(--vscode-panel-border)",
+    borderRadius: 6,
+    background: "var(--vscode-textCodeBlock-background)",
+    fontFamily: "var(--vscode-editor-font-family)",
+    fontSize: "var(--vscode-editor-font-size)",
   },
 };
 
@@ -151,7 +192,13 @@ const CandidateCard = ({
   primary?: boolean;
 }) => (
   <div style={primary ? styles.recommendationHero : styles.card}>
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        gap: 12,
+      }}
+    >
       <div>
         <strong>{candidate.name}</strong>
         <div style={styles.muted}>{candidate.ecosystem}</div>
@@ -278,14 +325,124 @@ const RecommendationView = ({
   );
 };
 
+const AIContextView = ({
+  contexts,
+  initialProfile,
+}: {
+  contexts: Record<AIContextProfile, ProjectAIContext>;
+  initialProfile: AIContextProfile;
+}) => {
+  const [profile, setProfile] =
+    useState<AIContextProfile>(initialProfile);
+  const context = contexts[profile];
+  const serialized = useMemo(
+    () => JSON.stringify(context, null, 2),
+    [context],
+  );
+
+  return (
+    <section>
+      <div style={styles.toolbar}>
+        <label>
+          Profile{" "}
+          <select
+            aria-label="AI context profile"
+            value={profile}
+            onChange={(event) =>
+              setProfile(event.target.value as AIContextProfile)
+            }
+          >
+            {profiles.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          style={styles.button}
+          onClick={() =>
+            vscode.postMessage({
+              action: "copyAIContext",
+              profile,
+            })
+          }
+        >
+          Copy JSON
+        </button>
+        <button
+          type="button"
+          style={styles.button}
+          onClick={() =>
+            vscode.postMessage({
+              action: "exportAIContext",
+              profile,
+            })
+          }
+        >
+          Export JSON
+        </button>
+      </div>
+
+      <section style={styles.stats}>
+        <div style={styles.card}>
+          <strong>{context.stats.approximateTokens}</strong>
+          <div style={styles.muted}>Approx. tokens</div>
+        </div>
+        <div style={styles.card}>
+          <strong>{context.stats.characters}</strong>
+          <div style={styles.muted}>Characters</div>
+        </div>
+        <div style={styles.card}>
+          <strong>{context.packages.length}</strong>
+          <div style={styles.muted}>Included packages</div>
+        </div>
+        <div style={styles.card}>
+          <strong>{context.constraints.length}</strong>
+          <div style={styles.muted}>Constraints</div>
+        </div>
+      </section>
+
+      <div style={{ ...styles.card, marginBottom: 12 }}>
+        <strong>What this context tells AI</strong>
+        <p style={styles.muted}>
+          Reuse installed capabilities, respect detected versions and
+          dependency-health constraints, and avoid adding redundant
+          technology.
+        </p>
+        {context.instructions.reuse.map((instruction) => (
+          <div key={instruction}>✓ {instruction}</div>
+        ))}
+      </div>
+
+      <div style={{ ...styles.card, marginBottom: 12 }}>
+        <strong>Intentionally excluded</strong>
+        <ul>
+          {context.exclusions.map((exclusion) => (
+            <li key={exclusion}>{exclusion}</li>
+          ))}
+        </ul>
+      </div>
+
+      <h2>Context preview</h2>
+      <pre style={styles.code}>{serialized}</pre>
+    </section>
+  );
+};
+
 const App = ({
   data,
   recommendation,
+  contexts,
   initialTab,
+  initialContextProfile,
 }: {
   data: ProjectEcosystem;
   recommendation: AdvisorResult | null;
+  contexts: Record<AIContextProfile, ProjectAIContext>;
   initialTab: Tab;
+  initialContextProfile: AIContextProfile;
 }) => {
   const [tab, setTab] = useState<Tab>(initialTab);
   const [packageSearch, setPackageSearch] = useState("");
@@ -553,27 +710,10 @@ const App = ({
       )}
 
       {tab === "AI Context" && (
-        <section>
-          {data.packages
-            .filter((pkg) => pkg.direct && pkg.guidance)
-            .map((pkg) => (
-              <div
-                key={pkg.id}
-                style={{ ...styles.card, marginBottom: 10 }}
-              >
-                <strong>
-                  {pkg.name} · {pkg.ecosystem}
-                </strong>
-                <p style={styles.muted}>
-                  Preferred patterns:{" "}
-                  {pkg.guidance?.preferredPatterns.join(" · ")}
-                </p>
-                <p style={styles.muted}>
-                  Avoid: {pkg.guidance?.avoidPatterns.join(" · ")}
-                </p>
-              </div>
-            ))}
-        </section>
+        <AIContextView
+          contexts={contexts}
+          initialProfile={initialContextProfile}
+        />
       )}
     </main>
   );
@@ -593,7 +733,11 @@ createRoot(rootElement).render(
     <App
       data={window.__STACKGENOME_DATA__}
       recommendation={window.__STACKGENOME_RECOMMENDATION__}
+      contexts={window.__STACKGENOME_AI_CONTEXTS__}
       initialTab={initialTab}
+      initialContextProfile={
+        window.__STACKGENOME_INITIAL_CONTEXT_PROFILE__
+      }
     />
   </React.StrictMode>,
 );

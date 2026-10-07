@@ -11,7 +11,8 @@
     { "path": "../../packages/core" },
     { "path": "../../packages/analyzer-node" },
     { "path": "../../packages/analyzer-python" },
-    { "path": "../../packages/advisor" }
+    { "path": "../../packages/advisor" },
+    { "path": "../../packages/context" }
   ],
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }
