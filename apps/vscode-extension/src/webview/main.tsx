@@ -46,7 +46,6 @@ const tabs: Tab[] = [
   "Health",
   "Capabilities",
   "Recommend",
-  "AI Context",
 ];
 
 const profiles: AIContextProfile[] = [

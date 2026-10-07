@@ -1,8 +1,8 @@
 {
   "name": "stackgenome-monorepo",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Language-agnostic project ecosystem intelligence for developers and AI assistants.",
+  "description": "Project ecosystem intelligence for developers.",
   "packageManager": "pnpm@10.17.1",
   "engines": {
     "node": ">=20.11.0"
@@ -14,7 +14,8 @@
     "test": "vitest run",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "package:vsix": "pnpm --filter stackgenome package:vsix"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",

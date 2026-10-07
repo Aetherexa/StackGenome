@@ -1,0 +1,69 @@
+name: Marketplace Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to VS Code Marketplace after packaging"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build release candidate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Quality gate
+        run: pnpm check
+      - name: Package VSIX
+        run: pnpm package:vsix
+      - name: Upload VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: stackgenome-1.0.0-vsix
+          path: artifacts/stackgenome-1.0.0.vsix
+          if-no-files-found: error
+
+  publish:
+    name: Publish to Marketplace
+    if: ${{ inputs.publish }}
+    needs: package
+    runs-on: ubuntu-latest
+    environment: vscode-marketplace
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Publish with Marketplace trusted publishing
+        working-directory: apps/vscode-extension
+        run: pnpm exec vsce publish --oidc --no-dependencies
