@@ -30,13 +30,16 @@ See the project's languages, frameworks, runtimes, package managers, build syste
 Inspect direct and transitive packages with declared and resolved versions.
 
 ### Dependency health
-Surface actionable findings such as:
+Separate actionable issues from informational ecosystem observations.
 
-- duplicate resolved versions
+Actionable findings include:
 - deprecated packages when the lockfile provides that metadata
 - missing resolved direct dependencies
-- peer dependency mismatches
+- peer dependency mismatches that affect direct dependencies
+- malformed lockfiles
 - conflicting Python requirement declarations
+
+Informational observations include signals such as duplicate resolved versions or transitive peer conditions that may be normal in a healthy dependency tree.
 
 ### Capability map
 Understand what installed packages already provide: validation, HTTP clients, forms, authentication, state management, testing, database access, and more.

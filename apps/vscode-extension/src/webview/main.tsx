@@ -73,131 +73,800 @@ const kindLabels: Record<TechnologyKind, string> = {
   other: "Other",
 };
 
+const kindSymbols: Record<TechnologyKind, string> = {
+  language: "</>",
+  framework: "◇",
+  runtime: "▶",
+  "build-system": "⚙",
+  "package-manager": "⬢",
+  testing: "✓",
+  ui: "▣",
+  database: "◉",
+  other: "•",
+};
+
+const capabilityNames: Record<string, string> = {
+  "http-client": "HTTP client",
+  "server-state": "Server-state management",
+  "query-caching": "Query caching",
+  "client-state": "Client state management",
+  "dependency-injection": "Dependency injection",
+  "server-rendering": "Server rendering",
+  "unit-testing": "Unit testing",
+  "e2e-testing": "End-to-end testing",
+  "async-testing": "Async testing",
+  "type-checking": "Static type checking",
+  "llm-orchestration": "LLM orchestration",
+  "data-analysis": "Data analysis",
+  "numerical-computing": "Numerical computing",
+  "web-server": "Web server",
+  "application-server": "Application server",
+  "date-time": "Date & time handling",
+  "feature-flags": "Feature flags",
+  api: "API toolkit",
+  ai: "AI integration",
+  aws: "AWS integration",
+  azure: "Azure integration",
+  orm: "ORM",
+  typescript: "TypeScript",
+};
+
+const css = `
+  :root {
+    color-scheme: light dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--vscode-editor-background);
+    color: var(--vscode-foreground);
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+
+  .sg-shell {
+    width: min(1480px, 100%);
+    margin: 0 auto;
+    padding: 30px 34px 56px;
+    font-family: var(--vscode-font-family);
+  }
+
+  .sg-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 28px;
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+
+  .sg-brand {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .sg-mark {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    border: 1px solid var(--vscode-focusBorder);
+    background: var(--vscode-editorWidget-background);
+    color: var(--vscode-focusBorder);
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    box-shadow: 0 2px 10px var(--vscode-widget-shadow);
+  }
+
+  .sg-title {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.15;
+    font-weight: 720;
+    letter-spacing: -0.4px;
+  }
+
+  .sg-tagline {
+    margin-top: 5px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 13px;
+  }
+
+  .sg-project-name {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--vscode-foreground);
+  }
+
+  .sg-header-meta {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+    max-width: 52%;
+  }
+
+  .sg-chip,
+  .sg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    border-radius: 999px;
+    padding: 4px 9px;
+    border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .sg-chip-subtle {
+    background: var(--vscode-editorWidget-background);
+    color: var(--vscode-descriptionForeground);
+  }
+
+  .sg-badge-positive {
+    border-color: var(--vscode-testing-iconPassed);
+    color: var(--vscode-testing-iconPassed);
+    background: var(--vscode-editorWidget-background);
+  }
+
+  .sg-badge-warning {
+    border-color: var(--vscode-editorWarning-foreground);
+    color: var(--vscode-editorWarning-foreground);
+    background: var(--vscode-editorWidget-background);
+  }
+
+  .sg-badge-error {
+    border-color: var(--vscode-testing-iconFailed);
+    color: var(--vscode-testing-iconFailed);
+    background: var(--vscode-editorWidget-background);
+  }
+
+  .sg-tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding: 4px;
+    margin-bottom: 28px;
+    border-radius: 10px;
+    border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    background: var(--vscode-editorWidget-background);
+  }
+
+  .sg-tab {
+    appearance: none;
+    border: 0;
+    border-radius: 7px;
+    padding: 8px 13px;
+    color: var(--vscode-descriptionForeground);
+    background: transparent;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+  }
+
+  .sg-tab:hover {
+    color: var(--vscode-foreground);
+    background: var(--vscode-toolbar-hoverBackground);
+  }
+
+  .sg-tab-active {
+    color: var(--vscode-foreground);
+    background: var(--vscode-tab-activeBackground);
+    box-shadow: inset 0 -2px 0 var(--vscode-focusBorder);
+  }
+
+  .sg-tab:focus-visible,
+  .sg-button:focus-visible,
+  .sg-ghost-button:focus-visible,
+  .sg-example:focus-visible,
+  .sg-input:focus-visible,
+  .sg-select:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
+  }
+
+  .sg-section {
+    margin-bottom: 30px;
+  }
+
+  .sg-section-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-end;
+    margin-bottom: 12px;
+  }
+
+  .sg-eyebrow {
+    margin-bottom: 5px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .sg-section-title {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.25;
+    font-weight: 650;
+  }
+
+  .sg-section-copy {
+    margin: 5px 0 0;
+    color: var(--vscode-descriptionForeground);
+    font-size: 13px;
+  }
+
+  .sg-muted {
+    color: var(--vscode-descriptionForeground);
+  }
+
+  .sg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+  }
+
+  .sg-wide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 14px;
+  }
+
+  .sg-card {
+    border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    border-radius: 11px;
+    background: var(--vscode-editorWidget-background);
+    padding: 16px;
+    min-width: 0;
+  }
+
+  .sg-card-soft {
+    background: var(--vscode-sideBar-background);
+  }
+
+  .sg-dna-card {
+    min-height: 118px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sg-dna-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .sg-dna-symbol {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--vscode-textCodeBlock-background);
+    color: var(--vscode-focusBorder);
+    font-family: var(--vscode-editor-font-family);
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .sg-dna-label {
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .sg-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .sg-tech-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    background: var(--vscode-textCodeBlock-background);
+    padding: 5px 9px;
+    font-size: 12px;
+    line-height: 1.15;
+  }
+
+  .sg-capability-card {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .sg-check {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--vscode-testing-iconPassed);
+    border: 1px solid var(--vscode-testing-iconPassed);
+    font-weight: 800;
+    font-size: 12px;
+  }
+
+  .sg-capability-title {
+    font-weight: 650;
+    margin-bottom: 7px;
+  }
+
+  .sg-decision {
+    border: 1px solid var(--vscode-focusBorder);
+    border-radius: 14px;
+    padding: 20px;
+    background: var(--vscode-editorWidget-background);
+    box-shadow: 0 5px 22px var(--vscode-widget-shadow);
+  }
+
+  .sg-decision-title {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 650;
+  }
+
+  .sg-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .sg-input,
+  .sg-select {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px;
+    color: var(--vscode-input-foreground);
+    background: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 7px;
+  }
+
+  .sg-button {
+    min-height: 38px;
+    padding: 8px 15px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .sg-button:hover:not(:disabled) {
+    background: var(--vscode-button-hoverBackground);
+  }
+
+  .sg-button:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .sg-examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 10px 0 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .sg-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .sg-example,
+  .sg-ghost-button {
+    appearance: none;
+    border-radius: 999px;
+    border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    background: transparent;
+    color: var(--vscode-descriptionForeground);
+    cursor: pointer;
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+
+  .sg-example:hover,
+  .sg-ghost-button:hover {
+    color: var(--vscode-foreground);
+    background: var(--vscode-toolbar-hoverBackground);
+  }
+
+  .sg-decision-result {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  }
+
+  .sg-decision-summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .sg-decision-headline {
+    font-size: 16px;
+    font-weight: 650;
+  }
+
+  .sg-inline-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 14px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+    margin-top: 7px;
+  }
+
+  .sg-recommendation {
+    border: 1px solid var(--vscode-focusBorder);
+    border-radius: 12px;
+    background: var(--vscode-sideBar-background);
+    padding: 18px;
+  }
+
+  .sg-recommendation-secondary {
+    border-color: var(--vscode-widget-border, var(--vscode-panel-border));
+    background: var(--vscode-editorWidget-background);
+  }
+
+  .sg-recommendation-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .sg-package-name {
+    font-size: 18px;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  .sg-package-ecosystem {
+    margin-top: 4px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+  }
+
+  .sg-why {
+    margin: 15px 0;
+    padding: 12px 13px;
+    border-left: 3px solid var(--vscode-focusBorder);
+    background: var(--vscode-textCodeBlock-background);
+    border-radius: 0 7px 7px 0;
+  }
+
+  .sg-why-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--vscode-descriptionForeground);
+  }
+
+  .sg-guidance-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .sg-guidance {
+    border-radius: 8px;
+    padding: 12px 13px;
+    background: var(--vscode-textCodeBlock-background);
+  }
+
+  .sg-guidance-title {
+    font-weight: 650;
+    margin-bottom: 7px;
+  }
+
+  .sg-guidance ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  .sg-guidance li + li {
+    margin-top: 6px;
+  }
+
+  .sg-alternatives {
+    margin-top: 12px;
+    border-top: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    padding-top: 10px;
+  }
+
+  .sg-alternatives summary {
+    cursor: pointer;
+    color: var(--vscode-descriptionForeground);
+    user-select: none;
+  }
+
+  .sg-health-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .sg-metric {
+    border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    border-radius: 10px;
+    padding: 14px;
+    background: var(--vscode-editorWidget-background);
+  }
+
+  .sg-metric-value {
+    font-size: 20px;
+    font-weight: 720;
+    line-height: 1;
+  }
+
+  .sg-metric-label {
+    margin-top: 7px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+  }
+
+  .sg-metric-error .sg-metric-value {
+    color: var(--vscode-testing-iconFailed);
+  }
+
+  .sg-metric-warning .sg-metric-value {
+    color: var(--vscode-editorWarning-foreground);
+  }
+
+  .sg-metric-info .sg-metric-value {
+    color: var(--vscode-charts-blue);
+  }
+
+  .sg-toolbar {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(130px, auto) auto;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .sg-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+  }
+
+  .sg-table-wrap {
+    overflow: auto;
+    border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    border-radius: 10px;
+    background: var(--vscode-editorWidget-background);
+  }
+
+  .sg-table {
+    width: 100%;
+    min-width: 850px;
+    border-collapse: collapse;
+  }
+
+  .sg-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    text-align: left;
+    padding: 10px 12px;
+    color: var(--vscode-descriptionForeground);
+    background: var(--vscode-editorWidget-background);
+    border-bottom: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.045em;
+    font-weight: 700;
+  }
+
+  .sg-table td {
+    padding: 11px 12px;
+    vertical-align: top;
+    border-bottom: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    font-size: 13px;
+  }
+
+  .sg-table tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .sg-table tbody tr:hover {
+    background: var(--vscode-list-hoverBackground);
+  }
+
+  .sg-package-cell {
+    font-weight: 650;
+  }
+
+  .sg-package-sub {
+    margin-top: 3px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 11px;
+  }
+
+  .sg-empty,
+  .sg-alert {
+    border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+    border-radius: 10px;
+    background: var(--vscode-editorWidget-background);
+    padding: 18px;
+  }
+
+  .sg-empty-title,
+  .sg-alert-title {
+    font-weight: 650;
+  }
+
+  .sg-empty p,
+  .sg-alert p {
+    margin-bottom: 0;
+  }
+
+  .sg-health-group + .sg-health-group {
+    margin-top: 24px;
+  }
+
+  .sg-finding {
+    position: relative;
+    padding-left: 44px;
+  }
+
+  .sg-finding-icon {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    font-size: 15px;
+  }
+
+  .sg-finding-title {
+    font-weight: 650;
+  }
+
+  .sg-finding-copy {
+    margin: 7px 0 0;
+    color: var(--vscode-descriptionForeground);
+    line-height: 1.45;
+  }
+
+  .sg-evidence-row {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  }
+
+  .sg-evidence-row:last-child {
+    border-bottom: 0;
+  }
+
+  .sg-evidence-name {
+    font-weight: 650;
+  }
+
+  .sg-evidence-source {
+    margin-top: 4px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 11px;
+  }
+
+  @media (max-width: 900px) {
+    .sg-shell {
+      padding: 22px 20px 42px;
+    }
+
+    .sg-header {
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .sg-header-meta {
+      justify-content: flex-start;
+      max-width: 100%;
+    }
+
+    .sg-health-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sg-guidance-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sg-toolbar {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .sg-toolbar .sg-input {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .sg-shell {
+      padding: 18px 14px 34px;
+    }
+
+    .sg-mark {
+      width: 38px;
+      height: 38px;
+      flex-basis: 38px;
+    }
+
+    .sg-title {
+      font-size: 23px;
+    }
+
+    .sg-section-head {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .sg-input-row,
+    .sg-toolbar,
+    .sg-health-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sg-button {
+      width: 100%;
+    }
+
+    .sg-decision-summary,
+    .sg-recommendation-head {
+      flex-direction: column;
+    }
+  }
+`;
+
 const normalizeTab = (value: string): Tab => {
   if (tabs.includes(value as Tab)) return value as Tab;
   if (value === "Packages") return "Dependencies";
   return "Overview";
-};
-
-const styles: Record<string, React.CSSProperties> = {
-  body: {
-    fontFamily: "var(--vscode-font-family)",
-    color: "var(--vscode-foreground)",
-    background: "var(--vscode-editor-background)",
-    minHeight: "100vh",
-    padding: "28px 32px 48px",
-    boxSizing: "border-box",
-    maxWidth: 1500,
-    margin: "0 auto",
-  },
-  header: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 20,
-    marginBottom: 22,
-  },
-  title: { fontSize: 27, fontWeight: 700, margin: 0 },
-  tagline: {
-    marginTop: 6,
-    fontSize: 14,
-    color: "var(--vscode-descriptionForeground)",
-  },
-  muted: { color: "var(--vscode-descriptionForeground)" },
-  card: {
-    border: "1px solid var(--vscode-panel-border)",
-    borderRadius: 10,
-    padding: 16,
-    background: "var(--vscode-sideBar-background)",
-  },
-  heroCard: {
-    border: "1px solid var(--vscode-focusBorder)",
-    borderRadius: 10,
-    padding: 18,
-    background: "var(--vscode-sideBar-background)",
-  },
-  section: { marginBottom: 20 },
-  sectionHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    gap: 12,
-    marginBottom: 10,
-  },
-  sectionTitle: { fontSize: 17, margin: 0 },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-    gap: 10,
-  },
-  wideGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: 12,
-  },
-  tabBar: {
-    display: "flex",
-    gap: 4,
-    flexWrap: "wrap",
-    borderBottom: "1px solid var(--vscode-panel-border)",
-    marginBottom: 22,
-  },
-  pill: {
-    display: "inline-block",
-    border: "1px solid var(--vscode-panel-border)",
-    borderRadius: 999,
-    padding: "3px 8px",
-    margin: "2px 4px 2px 0",
-    fontSize: 12,
-  },
-  toolbar: {
-    display: "flex",
-    gap: 10,
-    alignItems: "center",
-    marginBottom: 12,
-    flexWrap: "wrap",
-  },
-  input: {
-    minWidth: 280,
-    flex: 1,
-    padding: "9px 10px",
-    color: "var(--vscode-input-foreground)",
-    background: "var(--vscode-input-background)",
-    border: "1px solid var(--vscode-input-border)",
-    borderRadius: 4,
-  },
-  button: {
-    padding: "9px 14px",
-    color: "var(--vscode-button-foreground)",
-    background: "var(--vscode-button-background)",
-    border: "none",
-    borderRadius: 4,
-    cursor: "pointer",
-  },
-  secondaryButton: {
-    padding: "5px 9px",
-    color: "var(--vscode-foreground)",
-    background: "transparent",
-    border: "1px solid var(--vscode-panel-border)",
-    borderRadius: 999,
-    cursor: "pointer",
-    fontSize: 12,
-  },
-  table: { width: "100%", borderCollapse: "collapse" },
-  cell: {
-    textAlign: "left",
-    padding: "9px 8px",
-    borderBottom: "1px solid var(--vscode-panel-border)",
-    verticalAlign: "top",
-  },
-  meta: {
-    display: "flex",
-    gap: 14,
-    flexWrap: "wrap",
-    color: "var(--vscode-descriptionForeground)",
-    fontSize: 12,
-    marginTop: 8,
-  },
 };
 
 const displayRoot = (rootUri: string): string => {
@@ -209,6 +878,24 @@ const displayRoot = (rootUri: string): string => {
   } catch {
     return rootUri;
   }
+};
+
+const humanizeCapability = (value: string): string => {
+  const normalized = value.replace(/^capability:/, "");
+  const known = capabilityNames[normalized];
+  if (known) return known;
+
+  return normalized
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
+
+const matchStrength = (confidence: number): string => {
+  if (confidence >= 0.9) return "Very high";
+  if (confidence >= 0.8) return "High";
+  if (confidence >= 0.65) return "Good";
+  return "Moderate";
 };
 
 const groupTechnologies = (
@@ -235,11 +922,21 @@ const packageFinding = (
   );
 
 const TechnologyPills = ({ items }: { items: Technology[] }) => (
-  <div>
+  <div className="sg-pills">
     {items.map((technology) => (
-      <span key={technology.id} style={styles.pill}>
+      <span key={technology.id} className="sg-tech-pill">
         {technology.name}
         {technology.version ? ` ${technology.version}` : ""}
+      </span>
+    ))}
+  </div>
+);
+
+const CapabilityPills = ({ capabilities }: { capabilities: string[] }) => (
+  <div className="sg-pills">
+    {capabilities.map((capability) => (
+      <span key={capability} className="sg-tech-pill">
+        {humanizeCapability(capability)}
       </span>
     ))}
   </div>
@@ -251,53 +948,76 @@ const CandidateCard = ({
 }: {
   candidate: RecommendationCandidate;
   primary?: boolean;
-}) => (
-  <div style={primary ? styles.heroCard : styles.card}>
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-      <div>
-        <strong>{candidate.name}</strong>
-        <div style={styles.muted}>{candidate.ecosystem}</div>
+}) => {
+  const capabilityText = candidate.matchedCapabilities
+    .map(humanizeCapability)
+    .join(", ");
+
+  const why = candidate.existing
+    ? `${candidate.name} is already installed in this project and provides ${capabilityText}.`
+    : `${candidate.name} fits the detected ${candidate.ecosystem} ecosystem and provides ${capabilityText}.`;
+
+  return (
+    <div
+      className={`sg-recommendation ${primary ? "" : "sg-recommendation-secondary"}`}
+    >
+      <div className="sg-recommendation-head">
+        <div>
+          <div className="sg-package-name">{candidate.name}</div>
+          <div className="sg-package-ecosystem">{candidate.ecosystem}</div>
+        </div>
+        <span
+          className={`sg-badge ${candidate.existing ? "sg-badge-positive" : "sg-chip-subtle"}`}
+        >
+          {candidate.existing ? "✓ Already installed" : "＋ New dependency"}
+        </span>
       </div>
-      <span style={styles.pill}>
-        {candidate.existing ? "Already installed" : "New dependency"}
-      </span>
+
+      <CapabilityPills capabilities={candidate.matchedCapabilities} />
+
+      <div className="sg-inline-meta">
+        {candidate.installedVersion ? (
+          <span>Resolved {candidate.installedVersion}</span>
+        ) : candidate.declaredVersion ? (
+          <span>Declared {candidate.declaredVersion}</span>
+        ) : null}
+        <span>Match strength: {matchStrength(candidate.confidence)}</span>
+      </div>
+
+      <div className="sg-why">
+        <span className="sg-why-label">Why this fits</span>
+        {why}
+      </div>
+
+      {candidate.guidance?.preferredPatterns.length ||
+      candidate.guidance?.avoidPatterns.length ? (
+        <div className="sg-guidance-grid">
+          {candidate.guidance?.preferredPatterns.length ? (
+            <div className="sg-guidance">
+              <div className="sg-guidance-title">Recommended usage</div>
+              <ul>
+                {candidate.guidance.preferredPatterns.map((pattern) => (
+                  <li key={pattern}>{pattern}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {candidate.guidance?.avoidPatterns.length ? (
+            <div className="sg-guidance">
+              <div className="sg-guidance-title">Avoid</div>
+              <ul>
+                {candidate.guidance.avoidPatterns.map((pattern) => (
+                  <li key={pattern}>{pattern}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
-    <p>{candidate.reason}</p>
-    <TechnologyPills
-      items={candidate.matchedCapabilities.map((capability) => ({
-        id: capability,
-        name: capability,
-        kind: "other",
-        source: "advisor",
-      }))}
-    />
-    {candidate.installedVersion ? (
-      <p style={styles.muted}>Resolved version: {candidate.installedVersion}</p>
-    ) : candidate.declaredVersion ? (
-      <p style={styles.muted}>Declared version: {candidate.declaredVersion}</p>
-    ) : null}
-    {candidate.guidance?.preferredPatterns.length ? (
-      <div>
-        <strong>Preferred patterns</strong>
-        <ul>
-          {candidate.guidance.preferredPatterns.map((pattern) => (
-            <li key={pattern}>{pattern}</li>
-          ))}
-        </ul>
-      </div>
-    ) : null}
-    {candidate.guidance?.avoidPatterns.length ? (
-      <div>
-        <strong>Avoid</strong>
-        <ul>
-          {candidate.guidance.avoidPatterns.map((pattern) => (
-            <li key={pattern}>{pattern}</li>
-          ))}
-        </ul>
-      </div>
-    ) : null}
-  </div>
-);
+  );
+};
 
 const DecisionResult = ({
   recommendation,
@@ -306,44 +1026,65 @@ const DecisionResult = ({
 }) => {
   if (!recommendation) {
     return (
-      <p style={styles.muted}>
-        Describe what you need. StackGenome checks the current project first and
-        only recommends a new dependency when no suitable installed capability exists.
-      </p>
+      <div className="sg-decision-result">
+        <span className="sg-muted">
+          Describe an implementation need. StackGenome checks installed capabilities
+          first and only recommends a new dependency when nothing suitable already exists.
+        </span>
+      </div>
     );
   }
 
   if (recommendation.matchedCapabilities.length === 0) {
     return (
-      <div style={{ ...styles.card, marginTop: 12 }}>
-        <strong>No dependency-backed capability matched yet</strong>
-        <p>{recommendation.intent}</p>
-        <p style={styles.muted}>{recommendation.explanation}</p>
-        <p style={styles.muted}>
-          StackGenome V1 reasons from deterministic project ecosystem metadata.
-          Source-code implementation patterns are outside this V1 scope.
-        </p>
+      <div className="sg-decision-result">
+        <div className="sg-alert">
+          <div className="sg-alert-title">No dependency-backed capability matched yet</div>
+          <p>{recommendation.intent}</p>
+          <p className="sg-muted">{recommendation.explanation}</p>
+          <p className="sg-muted">
+            StackGenome V1 reasons from deterministic project ecosystem metadata;
+            source-code implementation patterns are outside this scope.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ marginTop: 14 }}>
-      <div style={{ ...styles.card, marginBottom: 10 }}>
-        <strong>
-          {recommendation.newDependencyRequired === false
-            ? "✓ Reuse what is already installed"
-            : recommendation.newDependencyRequired === true
-              ? "＋ New dependency recommended"
-              : "Capability understood"}
-        </strong>
-        <div style={styles.meta}>
-          <span>Need: {recommendation.intent}</span>
-          <span>
-            Capability: {recommendation.matchedCapabilities.join(", ")}
-          </span>
+    <div className="sg-decision-result">
+      <div className="sg-decision-summary">
+        <div>
+          <div className="sg-decision-headline">
+            {recommendation.newDependencyRequired === false
+              ? "Reuse what is already installed"
+              : recommendation.newDependencyRequired === true
+                ? "A new dependency is the best match"
+                : "Capability understood"}
+          </div>
+          <div className="sg-inline-meta">
+            <span>Need: {recommendation.intent}</span>
+            <span>
+              Capability:{" "}
+              {recommendation.matchedCapabilities
+                .map(humanizeCapability)
+                .join(", ")}
+            </span>
+          </div>
         </div>
-        <p style={styles.muted}>{recommendation.explanation}</p>
+        <span
+          className={`sg-badge ${
+            recommendation.newDependencyRequired === false
+              ? "sg-badge-positive"
+              : "sg-chip-subtle"
+          }`}
+        >
+          {recommendation.newDependencyRequired === false
+            ? "✓ No new dependency"
+            : recommendation.newDependencyRequired === true
+              ? "＋ New dependency"
+              : "Decision pending"}
+        </span>
       </div>
 
       {recommendation.primary ? (
@@ -351,9 +1092,12 @@ const DecisionResult = ({
       ) : null}
 
       {recommendation.alternatives.length > 0 ? (
-        <details style={{ marginTop: 10 }}>
-          <summary>Other compatible options</summary>
-          <div style={{ ...styles.wideGrid, marginTop: 10 }}>
+        <details className="sg-alternatives">
+          <summary>
+            Compare {recommendation.alternatives.length} alternative
+            {recommendation.alternatives.length === 1 ? "" : "s"}
+          </summary>
+          <div className="sg-wide-grid" style={{ marginTop: 12 }}>
             {recommendation.alternatives.map((candidate) => (
               <CandidateCard key={candidate.packageId} candidate={candidate} />
             ))}
@@ -363,6 +1107,27 @@ const DecisionResult = ({
     </div>
   );
 };
+
+const SectionHeader = ({
+  eyebrow,
+  title,
+  copy,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  copy?: string;
+  action?: React.ReactNode;
+}) => (
+  <div className="sg-section-head">
+    <div>
+      <div className="sg-eyebrow">{eyebrow}</div>
+      <h2 className="sg-section-title">{title}</h2>
+      {copy ? <p className="sg-section-copy">{copy}</p> : null}
+    </div>
+    {action}
+  </div>
+);
 
 const App = ({
   data,
@@ -441,471 +1206,537 @@ const App = ({
   };
 
   return (
-    <main style={styles.body}>
-      <header style={styles.header}>
-        <div>
-          <h1 style={styles.title}>StackGenome</h1>
-          <div style={styles.tagline}>
-            Know your stack before you change your stack.
-          </div>
-          <div style={{ ...styles.muted, marginTop: 8 }}>
-            <strong>{data.project.name}</strong>
-            {data.project.projectType ? ` · ${data.project.projectType}` : ""}
-          </div>
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={styles.muted}>
-            {data.analyzers.length > 0
-              ? data.analyzers.join(" + ")
-              : "No supported ecosystem detected"}
-          </div>
-          <div style={{ ...styles.muted, marginTop: 4, fontSize: 12 }}>
-            {displayRoot(data.analysis?.rootUri ?? data.project.rootUri)}
-          </div>
-        </div>
-      </header>
-
-      {analysisStatus !== "success" ? (
-        <div
-          style={{
-            ...styles.card,
-            marginBottom: 18,
-            border:
-              analysisStatus === "failed"
-                ? "1px solid var(--vscode-inputValidation-errorBorder)"
-                : "1px solid var(--vscode-inputValidation-warningBorder)",
-          }}
-        >
-          <strong>
-            {analysisStatus === "unsupported"
-              ? "No supported project ecosystem detected"
-              : analysisStatus === "failed"
-                ? "StackGenome could not analyze this project"
-                : "StackGenome completed with partial results"}
-          </strong>
-          {analysisStatus === "unsupported" ? (
-            <p>
-              StackGenome V1 looks for Node/TypeScript or Python project metadata
-              such as package.json, tsconfig.json, pyproject.toml, requirements.txt,
-              or Pipfile. Open a file inside the intended nested project and analyze again.
-            </p>
-          ) : null}
-          {(data.analysis?.diagnostics ?? []).map((diagnostic) => (
-            <p key={`${diagnostic.code}:${diagnostic.analyzerId ?? ""}`}>
-              {diagnostic.severity === "error" ? "⛔" : "⚠"} {diagnostic.message}
-            </p>
-          ))}
-        </div>
-      ) : null}
-
-      <nav style={styles.tabBar}>
-        {tabs.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setTab(item)}
-            style={{
-              padding: "9px 12px",
-              border: "none",
-              borderBottom:
-                tab === item
-                  ? "2px solid var(--vscode-focusBorder)"
-                  : "2px solid transparent",
-              color: "var(--vscode-foreground)",
-              background: "transparent",
-              cursor: "pointer",
-            }}
-          >
-            {item}
-          </button>
-        ))}
-      </nav>
-
-      {tab === "Overview" ? (
-        <>
-          <section style={styles.section}>
-            <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>Project DNA</h2>
-              <span style={styles.muted}>
-                {directCount} direct · {transitiveCount} transitive dependencies
-              </span>
-            </div>
-            {data.technologies.length === 0 ? (
-              <div style={styles.card}>
-                No technology metadata was detected for this project.
+    <>
+      <style>{css}</style>
+      <main className="sg-shell">
+        <header className="sg-header">
+          <div className="sg-brand">
+            <div className="sg-mark" aria-hidden="true">SG</div>
+            <div>
+              <h1 className="sg-title">StackGenome</h1>
+              <div className="sg-tagline">
+                Know your stack before you change your stack.
               </div>
-            ) : (
-              <div style={styles.grid}>
-                {kindOrder
-                  .filter((kind) => (technologyGroups.get(kind)?.length ?? 0) > 0)
-                  .map((kind) => (
-                    <div key={kind} style={styles.card}>
-                      <strong>{kindLabels[kind]}</strong>
-                      <div style={{ marginTop: 8 }}>
+              <div className="sg-project-name">
+                <strong>{data.project.name}</strong>
+                {data.project.projectType ? ` · ${data.project.projectType}` : ""}
+              </div>
+            </div>
+          </div>
+
+          <div className="sg-header-meta">
+            {data.analyzers.map((analyzer) => (
+              <span key={analyzer} className="sg-chip sg-chip-subtle">
+                {analyzer}
+              </span>
+            ))}
+            <span className="sg-chip sg-chip-subtle">
+              {displayRoot(data.analysis?.rootUri ?? data.project.rootUri)}
+            </span>
+            <span
+              className={`sg-badge ${
+                actionableCount === 0 ? "sg-badge-positive" : "sg-badge-warning"
+              }`}
+            >
+              {actionableCount === 0
+                ? "✓ Healthy"
+                : `${actionableCount} actionable`}
+            </span>
+          </div>
+        </header>
+
+        {analysisStatus !== "success" ? (
+          <div className="sg-alert" style={{ marginBottom: 18 }}>
+            <div className="sg-alert-title">
+              {analysisStatus === "unsupported"
+                ? "No supported project ecosystem detected"
+                : analysisStatus === "failed"
+                  ? "StackGenome could not analyze this project"
+                  : "StackGenome completed with partial results"}
+            </div>
+            {analysisStatus === "unsupported" ? (
+              <p>
+                StackGenome V1 looks for Node/TypeScript or Python project metadata
+                such as package.json, tsconfig.json, pyproject.toml, requirements.txt,
+                or Pipfile. Open a file inside the intended nested project and analyze again.
+              </p>
+            ) : null}
+            {(data.analysis?.diagnostics ?? []).map((diagnostic) => (
+              <p key={`${diagnostic.code}:${diagnostic.analyzerId ?? ""}`}>
+                {diagnostic.severity === "error" ? "⛔" : "⚠"} {diagnostic.message}
+              </p>
+            ))}
+          </div>
+        ) : null}
+
+        <nav className="sg-tabs" aria-label="StackGenome report sections">
+          {tabs.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={`sg-tab ${tab === item ? "sg-tab-active" : ""}`}
+              aria-current={tab === item ? "page" : undefined}
+              onClick={() => setTab(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+
+        {tab === "Overview" ? (
+          <>
+            <section className="sg-section">
+              <SectionHeader
+                eyebrow="Project intelligence"
+                title="Project DNA"
+                copy="The technologies and tooling StackGenome can prove from project metadata."
+                action={
+                  <span className="sg-muted">
+                    {directCount} direct · {transitiveCount} transitive
+                  </span>
+                }
+              />
+
+              {data.technologies.length === 0 ? (
+                <div className="sg-empty">
+                  <div className="sg-empty-title">No technology metadata detected</div>
+                  <p className="sg-muted">
+                    StackGenome could not derive technology signals from the current project metadata.
+                  </p>
+                </div>
+              ) : (
+                <div className="sg-grid">
+                  {kindOrder
+                    .filter(
+                      (kind) => (technologyGroups.get(kind)?.length ?? 0) > 0,
+                    )
+                    .map((kind) => (
+                      <div key={kind} className="sg-card sg-dna-card">
+                        <div className="sg-dna-top">
+                          <span className="sg-dna-label">{kindLabels[kind]}</span>
+                          <span className="sg-dna-symbol" aria-hidden="true">
+                            {kindSymbols[kind]}
+                          </span>
+                        </div>
                         <TechnologyPills items={technologyGroups.get(kind) ?? []} />
                       </div>
+                    ))}
+                </div>
+              )}
+            </section>
+
+            <section className="sg-section">
+              <SectionHeader
+                eyebrow="Existing-first"
+                title="What this project can already do"
+                copy="Capabilities backed by installed direct dependencies."
+                action={
+                  <button
+                    type="button"
+                    className="sg-ghost-button"
+                    onClick={() => setTab("Capabilities")}
+                  >
+                    View all {capabilities.length}
+                  </button>
+                }
+              />
+
+              {capabilities.length === 0 ? (
+                <div className="sg-empty">
+                  <div className="sg-empty-title">No curated capabilities detected yet</div>
+                  <p className="sg-muted">
+                    The project was analyzed successfully, but StackGenome's deterministic
+                    catalog does not yet classify its direct dependencies into capabilities.
+                  </p>
+                </div>
+              ) : (
+                <div className="sg-grid">
+                  {capabilities.slice(0, 6).map((capability) => (
+                    <div key={capability.id} className="sg-card sg-capability-card">
+                      <span className="sg-check" aria-hidden="true">✓</span>
+                      <div>
+                        <div className="sg-capability-title">{capability.name}</div>
+                        <div className="sg-pills">
+                          {capability.providedBy.map((provider) => (
+                            <span key={provider} className="sg-tech-pill">
+                              {provider}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="sg-section">
+              <SectionHeader
+                eyebrow="Technology decision"
+                title="Find the right capability"
+                copy="StackGenome checks this project's installed stack first."
+                action={<span className="sg-badge sg-badge-positive">Existing-first</span>}
+              />
+
+              <div className="sg-decision">
+                <h3 className="sg-decision-title">What are you trying to add?</h3>
+                <p className="sg-section-copy">
+                  Describe the capability, not the package. We'll reuse what is already
+                  installed whenever a suitable option exists.
+                </p>
+
+                <div className="sg-input-row">
+                  <input
+                    aria-label="Capability intent"
+                    className="sg-input"
+                    value={capabilityIntent}
+                    onChange={(event) => setCapabilityIntent(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") runCapabilityDecision();
+                    }}
+                    placeholder="e.g. internationalization, logging, API validation"
+                  />
+                  <button
+                    type="button"
+                    className="sg-button"
+                    disabled={decisionPending || !capabilityIntent.trim()}
+                    onClick={runCapabilityDecision}
+                  >
+                    {decisionPending ? "Checking…" : "Find capability"}
+                  </button>
+                </div>
+
+                <fieldset className="sg-examples">
+                  <legend className="sg-visually-hidden">Capability examples</legend>
+                  {examples.map((example) => (
+                    <button
+                      key={example}
+                      type="button"
+                      className="sg-example"
+                      onClick={() => setCapabilityIntent(example)}
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </fieldset>
+
+                <DecisionResult recommendation={initialRecommendation} />
+              </div>
+            </section>
+
+            <section className="sg-section">
+              <SectionHeader
+                eyebrow="Dependency health"
+                title="Signal, not noise"
+                copy="Actionable problems are separated from informational observations."
+                action={
+                  <button
+                    type="button"
+                    className="sg-ghost-button"
+                    onClick={() => setTab("Health")}
+                  >
+                    View findings
+                  </button>
+                }
+              />
+
+              <div className="sg-health-grid">
+                <div className="sg-metric sg-metric-error">
+                  <div className="sg-metric-value">{errorCount}</div>
+                  <div className="sg-metric-label">Errors</div>
+                </div>
+                <div className="sg-metric sg-metric-warning">
+                  <div className="sg-metric-value">{warningCount}</div>
+                  <div className="sg-metric-label">Warnings</div>
+                </div>
+                <div className="sg-metric sg-metric-info">
+                  <div className="sg-metric-value">{infoCount}</div>
+                  <div className="sg-metric-label">Observations</div>
+                </div>
+                <div className="sg-metric">
+                  <div className="sg-metric-value">{data.packages.length}</div>
+                  <div className="sg-metric-label">Resolved packages</div>
+                </div>
+              </div>
+            </section>
+          </>
+        ) : null}
+
+        {tab === "Technology" ? (
+          <section className="sg-section">
+            <SectionHeader
+              eyebrow="Evidence"
+              title="Project technology"
+              copy="Detected from manifests, lockfiles, and project configuration."
+            />
+
+            {data.technologies.length === 0 ? (
+              <div className="sg-empty">No technology metadata was detected.</div>
+            ) : (
+              <div className="sg-wide-grid">
+                {kindOrder
+                  .filter(
+                    (kind) => (technologyGroups.get(kind)?.length ?? 0) > 0,
+                  )
+                  .map((kind) => (
+                    <div key={kind} className="sg-card">
+                      <div className="sg-dna-top">
+                        <strong>{kindLabels[kind]}</strong>
+                        <span className="sg-dna-symbol" aria-hidden="true">
+                          {kindSymbols[kind]}
+                        </span>
+                      </div>
+                      {(technologyGroups.get(kind) ?? []).map((technology) => (
+                        <div key={technology.id} className="sg-evidence-row">
+                          <div className="sg-evidence-name">
+                            {technology.name}
+                            {technology.version ? (
+                              <span className="sg-tech-pill" style={{ marginLeft: 7 }}>
+                                {technology.version}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="sg-evidence-source">
+                            Evidence: {technology.source}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ))}
               </div>
             )}
           </section>
+        ) : null}
 
-          <section style={styles.section}>
-            <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>What this project can already do</h2>
-              <button
-                type="button"
-                style={styles.secondaryButton}
-                onClick={() => setTab("Capabilities")}
-              >
-                View all {capabilities.length}
-              </button>
-            </div>
+        {tab === "Capabilities" ? (
+          <section className="sg-section">
+            <SectionHeader
+              eyebrow="Reuse"
+              title="Existing capabilities"
+              copy="What installed direct dependencies already provide."
+            />
+
             {capabilities.length === 0 ? (
-              <div style={styles.card}>
-                <strong>No curated capabilities detected yet</strong>
-                <p style={styles.muted}>
-                  StackGenome still understands the project technology and dependencies.
-                  Capability classification is intentionally deterministic and may not yet
-                  cover every installed package.
+              <div className="sg-empty">
+                <div className="sg-empty-title">No curated capabilities detected</div>
+                <p className="sg-muted">
+                  This does not mean the project has no functionality. StackGenome V1
+                  only reports capabilities backed by deterministic package knowledge.
                 </p>
               </div>
             ) : (
-              <div style={styles.grid}>
-                {capabilities.slice(0, 6).map((capability) => (
-                  <div key={capability.id} style={styles.card}>
-                    <strong>✓ {capability.name}</strong>
-                    <div style={{ marginTop: 8 }}>
-                      {capability.providedBy.map((provider) => (
-                        <span key={provider} style={styles.pill}>
-                          {provider}
-                        </span>
-                      ))}
+              <div className="sg-wide-grid">
+                {capabilities.map((capability) => (
+                  <div key={capability.id} className="sg-card sg-capability-card">
+                    <span className="sg-check" aria-hidden="true">✓</span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="sg-capability-title">{capability.name}</div>
+                      <div className="sg-pills">
+                        {capability.providedBy.map((provider) => (
+                          <span key={provider} className="sg-tech-pill">
+                            {provider}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="sg-inline-meta">
+                        <span>Evidence confidence: {matchStrength(capability.confidence)}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </section>
+        ) : null}
 
-          <section style={styles.section}>
-            <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>Technology decision</h2>
-              <span style={styles.muted}>Existing dependency first</span>
-            </div>
-            <div style={styles.heroCard}>
-              <strong>What are you trying to add?</strong>
-              <p style={styles.muted}>
-                StackGenome checks this project's installed capabilities before
-                recommending another dependency.
-              </p>
-              <div style={styles.toolbar}>
-                <input
-                  aria-label="Capability intent"
-                  style={styles.input}
-                  value={capabilityIntent}
-                  onChange={(event) => setCapabilityIntent(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") runCapabilityDecision();
-                  }}
-                  placeholder="e.g. internationalization, logging, API validation"
-                />
-                <button
-                  type="button"
-                  style={styles.button}
-                  disabled={decisionPending || !capabilityIntent.trim()}
-                  onClick={runCapabilityDecision}
-                >
-                  {decisionPending ? "Checking…" : "Find Capability"}
-                </button>
-              </div>
-              <div>
-                {examples.map((example) => (
-                  <button
-                    key={example}
-                    type="button"
-                    style={styles.secondaryButton}
-                    onClick={() => setCapabilityIntent(example)}
-                  >
-                    {example}
-                  </button>
-                ))}
-              </div>
-              <DecisionResult recommendation={initialRecommendation} />
-            </div>
-          </section>
-
-          <section style={styles.section}>
-            <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>Dependency health</h2>
-              <button
-                type="button"
-                style={styles.secondaryButton}
-                onClick={() => setTab("Health")}
-              >
-                View findings
-              </button>
-            </div>
-            <div style={styles.wideGrid}>
-              <div style={styles.card}>
-                <strong>{actionableCount === 0 ? "✓ No actionable issues" : `${actionableCount} actionable`}</strong>
-                <div style={styles.meta}>
-                  <span>{errorCount} errors</span>
-                  <span>{warningCount} warnings</span>
-                  <span>{infoCount} observations</span>
-                </div>
-              </div>
-              <div style={styles.card}>
-                <strong>Dependency footprint</strong>
-                <div style={styles.meta}>
-                  <span>{directCount} direct</span>
-                  <span>{transitiveCount} transitive</span>
-                  <span>{data.packages.length} total</span>
-                </div>
-              </div>
-            </div>
-          </section>
-        </>
-      ) : null}
-
-      {tab === "Technology" ? (
-        <section>
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>Project technology</h2>
-            <span style={styles.muted}>
-              Detected from manifests, lockfiles, and project configuration
-            </span>
-          </div>
-          {data.technologies.length === 0 ? (
-            <div style={styles.card}>No technology metadata was detected.</div>
-          ) : (
-            <div style={styles.wideGrid}>
-              {kindOrder
-                .filter((kind) => (technologyGroups.get(kind)?.length ?? 0) > 0)
-                .map((kind) => (
-                  <div key={kind} style={styles.card}>
-                    <h3 style={{ marginTop: 0 }}>{kindLabels[kind]}</h3>
-                    {(technologyGroups.get(kind) ?? []).map((technology) => (
-                      <div
-                        key={technology.id}
-                        style={{
-                          padding: "8px 0",
-                          borderBottom: "1px solid var(--vscode-panel-border)",
-                        }}
-                      >
-                        <strong>{technology.name}</strong>
-                        {technology.version ? (
-                          <span style={styles.pill}>{technology.version}</span>
-                        ) : null}
-                        <div style={{ ...styles.muted, fontSize: 12, marginTop: 3 }}>
-                          Evidence: {technology.source}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-            </div>
-          )}
-        </section>
-      ) : null}
-
-      {tab === "Capabilities" ? (
-        <section>
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>Existing capabilities</h2>
-            <span style={styles.muted}>
-              What installed direct dependencies already provide
-            </span>
-          </div>
-          {capabilities.length === 0 ? (
-            <div style={styles.card}>
-              <strong>No curated capabilities detected</strong>
-              <p style={styles.muted}>
-                This does not mean the project has no functionality. StackGenome V1
-                only reports capabilities backed by deterministic package knowledge.
-              </p>
-            </div>
-          ) : (
-            <div style={styles.wideGrid}>
-              {capabilities.map((capability) => (
-                <div key={capability.id} style={styles.card}>
-                  <strong>{capability.name}</strong>
-                  <p style={styles.muted}>Provided by installed dependencies:</p>
-                  <div>
-                    {capability.providedBy.map((provider) => (
-                      <span key={provider} style={styles.pill}>
-                        {provider}
-                      </span>
-                    ))}
-                  </div>
-                  <div style={styles.meta}>
-                    <span>
-                      Confidence: {Math.round(capability.confidence * 100)}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      ) : null}
-
-      {tab === "Dependencies" ? (
-        <section>
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>Dependency intelligence</h2>
-            <span style={styles.muted}>
-              {directCount} direct · {transitiveCount} transitive
-            </span>
-          </div>
-          <div style={styles.toolbar}>
-            <input
-              aria-label="Search dependencies"
-              value={packageSearch}
-              onChange={(event) => setPackageSearch(event.target.value)}
-              placeholder="Search package, ecosystem, category or purpose"
-              style={styles.input}
+        {tab === "Dependencies" ? (
+          <section className="sg-section">
+            <SectionHeader
+              eyebrow="Inventory"
+              title="Dependency intelligence"
+              copy="Declared vs resolved versions, purpose, scope, and health."
+              action={
+                <span className="sg-muted">
+                  {directCount} direct · {transitiveCount} transitive
+                </span>
+              }
             />
-            <select
-              aria-label="Filter ecosystem"
-              value={ecosystem}
-              onChange={(event) => setEcosystem(event.target.value)}
-            >
-              <option value="all">All ecosystems</option>
-              {ecosystems.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-            <label>
+
+            <div className="sg-toolbar">
               <input
-                type="checkbox"
-                checked={directOnly}
-                onChange={(event) => setDirectOnly(event.target.checked)}
-              />{" "}
-              Direct only
-            </label>
-          </div>
-
-          {filteredPackages.length === 0 ? (
-            <div style={styles.card}>
-              No dependencies match the current filters.
+                aria-label="Search dependencies"
+                className="sg-input"
+                value={packageSearch}
+                onChange={(event) => setPackageSearch(event.target.value)}
+                placeholder="Search package, ecosystem, category or purpose"
+              />
+              <select
+                aria-label="Filter ecosystem"
+                className="sg-select"
+                value={ecosystem}
+                onChange={(event) => setEcosystem(event.target.value)}
+              >
+                <option value="all">All ecosystems</option>
+                {ecosystems.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+              <label className="sg-checkbox">
+                <input
+                  type="checkbox"
+                  checked={directOnly}
+                  onChange={(event) => setDirectOnly(event.target.checked)}
+                />
+                Direct only
+              </label>
             </div>
-          ) : (
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.cell}>Package</th>
-                  <th style={styles.cell}>Type</th>
-                  <th style={styles.cell}>Declared</th>
-                  <th style={styles.cell}>Resolved</th>
-                  <th style={styles.cell}>Purpose</th>
-                  <th style={styles.cell}>Health</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPackages.map((pkg) => {
-                  const finding = packageFinding(pkg, data.findings);
-                  return (
-                    <tr key={pkg.id}>
-                      <td style={styles.cell}>
-                        <strong>{pkg.name}</strong>
-                        <div style={styles.muted}>
-                          {pkg.ecosystem}
-                          {pkg.category ? ` · ${pkg.category}` : ""}
-                        </div>
-                      </td>
-                      <td style={styles.cell}>
-                        {pkg.direct ? pkg.scope : "transitive"}
-                      </td>
-                      <td style={styles.cell}>{pkg.declaredVersion ?? "—"}</td>
-                      <td style={styles.cell}>
-                        {pkg.resolvedVersions.join(", ") || "—"}
-                      </td>
-                      <td style={styles.cell}>
-                        {pkg.purpose ?? (
-                          <span style={styles.muted}>
-                            Purpose not classified yet
-                          </span>
-                        )}
-                      </td>
-                      <td style={styles.cell}>
-                        {finding
-                          ? `${finding.severity === "error" ? "⛔" : "⚠"} ${finding.title}`
-                          : "✓ No actionable issue"}
-                      </td>
+
+            {filteredPackages.length === 0 ? (
+              <div className="sg-empty">
+                <div className="sg-empty-title">No dependencies match these filters</div>
+                <p className="sg-muted">
+                  Clear the search or broaden the ecosystem/direct dependency filters.
+                </p>
+              </div>
+            ) : (
+              <div className="sg-table-wrap">
+                <table className="sg-table">
+                  <thead>
+                    <tr>
+                      <th>Package</th>
+                      <th>Type</th>
+                      <th>Declared</th>
+                      <th>Resolved</th>
+                      <th>Purpose</th>
+                      <th>Health</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </section>
-      ) : null}
+                  </thead>
+                  <tbody>
+                    {filteredPackages.map((pkg) => {
+                      const finding = packageFinding(pkg, data.findings);
+                      return (
+                        <tr key={pkg.id}>
+                          <td>
+                            <div className="sg-package-cell">{pkg.name}</div>
+                            <div className="sg-package-sub">
+                              {pkg.ecosystem}
+                              {pkg.category ? ` · ${pkg.category}` : ""}
+                            </div>
+                          </td>
+                          <td>{pkg.direct ? pkg.scope : "transitive"}</td>
+                          <td>{pkg.declaredVersion ?? "—"}</td>
+                          <td>{pkg.resolvedVersions.join(", ") || "—"}</td>
+                          <td>
+                            {pkg.purpose ?? (
+                              <span className="sg-muted">Purpose not classified yet</span>
+                            )}
+                          </td>
+                          <td>
+                            {finding ? (
+                              <span
+                                className={`sg-badge ${
+                                  finding.severity === "error"
+                                    ? "sg-badge-error"
+                                    : "sg-badge-warning"
+                                }`}
+                              >
+                                {finding.severity === "error" ? "⛔" : "⚠"}{" "}
+                                {finding.title}
+                              </span>
+                            ) : (
+                              <span className="sg-badge sg-badge-positive">
+                                ✓ No actionable issue
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        ) : null}
 
-      {tab === "Health" ? (
-        <section>
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>Dependency health</h2>
-            <span style={styles.muted}>
-              {errorCount} errors · {warningCount} warnings · {infoCount} observations
-            </span>
-          </div>
+        {tab === "Health" ? (
+          <section className="sg-section">
+            <SectionHeader
+              eyebrow="Quality"
+              title="Dependency health"
+              copy="Actionable errors and warnings are separated from ecosystem observations."
+              action={
+                <div className="sg-pills">
+                  <span className="sg-badge sg-badge-error">{errorCount} errors</span>
+                  <span className="sg-badge sg-badge-warning">
+                    {warningCount} warnings
+                  </span>
+                  <span className="sg-chip sg-chip-subtle">
+                    {infoCount} observations
+                  </span>
+                </div>
+              }
+            />
 
-          {data.findings.length === 0 ? (
-            <div style={styles.card}>
-              <strong>✓ No dependency health findings</strong>
-              <p style={styles.muted}>
-                StackGenome did not detect deterministic ecosystem issues in the
-                current analysis.
-              </p>
-            </div>
-          ) : (
-            (["error", "warning", "info"] as const).map((severity) => {
-              const findings = data.findings.filter(
-                (finding) => finding.severity === severity,
-              );
-              if (findings.length === 0) return null;
+            {data.findings.length === 0 ? (
+              <div className="sg-empty">
+                <div className="sg-empty-title">✓ No dependency health findings</div>
+                <p className="sg-muted">
+                  StackGenome did not detect deterministic ecosystem issues in this analysis.
+                </p>
+              </div>
+            ) : (
+              (["error", "warning", "info"] as const).map((severity) => {
+                const findings = data.findings.filter(
+                  (finding) => finding.severity === severity,
+                );
+                if (findings.length === 0) return null;
 
-              return (
-                <section key={severity} style={styles.section}>
-                  <h3>
-                    {severity === "error"
-                      ? "Errors"
-                      : severity === "warning"
-                        ? "Warnings"
-                        : "Observations"}
-                    {" "}({findings.length})
-                  </h3>
-                  <div style={styles.wideGrid}>
-                    {findings.map((finding) => (
-                      <div key={finding.id} style={styles.card}>
-                        <strong>
-                          {severity === "error"
-                            ? "⛔"
-                            : severity === "warning"
-                              ? "⚠"
-                              : "ⓘ"}{" "}
-                          {finding.title}
-                        </strong>
-                        <p>{finding.message}</p>
-                        {finding.recommendation ? (
-                          <p style={styles.muted}>
-                            {severity === "info" ? "Note" : "Recommendation"}:{" "}
-                            {finding.recommendation}
-                          </p>
-                        ) : null}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              );
-            })
-          )}
-        </section>
-      ) : null}
-    </main>
+                return (
+                  <section key={severity} className="sg-health-group">
+                    <div className="sg-section-head">
+                      <h3 className="sg-section-title">
+                        {severity === "error"
+                          ? "Errors"
+                          : severity === "warning"
+                            ? "Warnings"
+                            : "Observations"}{" "}
+                        <span className="sg-muted">({findings.length})</span>
+                      </h3>
+                    </div>
+                    <div className="sg-wide-grid">
+                      {findings.map((finding) => (
+                        <div key={finding.id} className="sg-card sg-finding">
+                          <span className="sg-finding-icon" aria-hidden="true">
+                            {severity === "error"
+                              ? "⛔"
+                              : severity === "warning"
+                                ? "⚠"
+                                : "ⓘ"}
+                          </span>
+                          <div className="sg-finding-title">{finding.title}</div>
+                          <p className="sg-finding-copy">{finding.message}</p>
+                          {finding.recommendation ? (
+                            <p className="sg-finding-copy">
+                              <strong>
+                                {severity === "info" ? "Note" : "Recommendation"}:
+                              </strong>{" "}
+                              {finding.recommendation}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })
+            )}
+          </section>
+        ) : null}
+      </main>
+    </>
   );
 };
 
