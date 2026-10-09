@@ -471,7 +471,22 @@ const css = `
     display: flex;
     flex-wrap: wrap;
     gap: 7px;
-    margin-top: 10px;
+    margin: 10px 0 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .sg-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .sg-example,
@@ -1391,7 +1406,8 @@ const App = ({
                   </button>
                 </div>
 
-                <div className="sg-examples" role="group" aria-label="Capability examples">
+                <fieldset className="sg-examples">
+                  <legend className="sg-visually-hidden">Capability examples</legend>
                   {examples.map((example) => (
                     <button
                       key={example}
@@ -1402,7 +1418,7 @@ const App = ({
                       {example}
                     </button>
                   ))}
-                </div>
+                </fieldset>
 
                 <DecisionResult recommendation={initialRecommendation} />
               </div>
