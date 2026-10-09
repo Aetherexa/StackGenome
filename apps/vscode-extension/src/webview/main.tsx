@@ -1391,7 +1391,7 @@ const App = ({
                   </button>
                 </div>
 
-                <div className="sg-examples" aria-label="Capability examples">
+                <div className="sg-examples" role="group" aria-label="Capability examples">
                   {examples.map((example) => (
                     <button
                       key={example}
