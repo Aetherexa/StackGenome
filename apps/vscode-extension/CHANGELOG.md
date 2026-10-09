@@ -24,6 +24,10 @@ All notable changes to StackGenome are documented here.
 - Ecosystem-aware technology recommendations with implementation guidance.
 
 ### VS Code experience
+- Marketplace-ready visual polish using native VS Code theme variables.
+- Stronger information hierarchy, responsive layouts, semantic badges, and accessible focus states.
+- Primary recommendations now show human-friendly capability names, match strength, why-the-option-fits context, and implementation guidance.
+- Alternatives are collapsed by default so the primary decision stays visually dominant.
 - Project Technology Intelligence overview centered on Project DNA.
 - Existing-capability cards show what the project can already do.
 - Inline technology-decision workflow on the Overview.
