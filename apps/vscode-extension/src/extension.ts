@@ -136,9 +136,16 @@ const resolveProjectRoot = async (): Promise<{
     };
   }
 
+  const fallback = folders[0];
+  if (!fallback) {
+    throw new Error(
+      "Open a workspace folder before running StackGenome.",
+    );
+  }
+
   return {
-    uri: folders[0]!.uri,
-    name: folders[0]!.name,
+    uri: fallback.uri,
+    name: fallback.name,
   };
 };
 
